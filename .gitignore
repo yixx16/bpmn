@@ -1,0 +1,33 @@
+# --- Camunda Run: motor local (se descarga aparte, no se versiona) ---
+camunda-bpm-run-*/
+camunda-bpm-run-*.7z
+camunda-bpm-run-*.zip
+camunda-h2-*/
+
+# Bases de datos H2 y trazas que generan Camunda y Spring Boot al ejecutarse
+*.mv.db
+*.trace.db
+
+# --- Node.js (workers) ---
+node_modules/
+npm-debug.log*
+
+# --- Maven / Spring Boot ---
+target/
+
+# --- Archivos comprimidos de entregas (su contenido ya está en las carpetas) ---
+*.zip
+*.7z
+*.rar
+
+# --- Office: archivos temporales mientras un documento está abierto ---
+~$*
+
+# --- Sistema operativo y editores ---
+Thumbs.db
+desktop.ini
+.DS_Store
+.idea/
+.vscode/
+.claude/
+*.log

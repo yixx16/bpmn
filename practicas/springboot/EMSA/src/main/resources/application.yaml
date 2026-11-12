@@ -1,0 +1,16 @@
+server:
+  address: 127.0.0.1
+spring:
+  datasource:
+    url: jdbc:h2:file:./data/emsa
+    username: sa
+    password: ""
+camunda:
+  bpm:
+    admin-user:
+      id: admin
+      password: admin
+      first-name: Administrador
+    filter:
+      create: Todas las tareas
+    history-level: full

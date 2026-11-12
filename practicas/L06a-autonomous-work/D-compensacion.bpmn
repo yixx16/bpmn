@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_RetoD" name="Reto D - Compensación" targetNamespace="http://universidad.edu/prestamos/bpmn" exporter="Camunda Modeler" exporterVersion="5.51.1" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.24.0">
+  <bpmn:message id="Message_CancelacionSolicitante" name="Cancelación del solicitante" />
+  <bpmn:process id="Process_RetoD_Compensacion" name="Reto D - Devolución del depósito al cancelar durante la preparación" isExecutable="true" camunda:historyTimeToLive="180">
+    <bpmn:documentation>Fragmento del proceso "Gestión de solicitudes de préstamo de equipos universitarios". Se integra entre la aprobación/reserva y la entrega: la universidad cobra el depósito de garantía justo antes de "Preparar préstamo". El manejador de compensación es la tarea "Devolver depósito de garantía" (marcador de compensación), ligada mediante una asociación al evento de compensación adjunto al borde de "Cobrar depósito de garantía". El evento que solicita la compensación es el evento intermedio de lanzamiento de compensación "Solicitar compensación del cobro", que se emite después de que el mensaje de cancelación del solicitante (evento de mensaje interruptivo en el borde de "Preparar préstamo") detenga el trabajo pendiente.</bpmn:documentation>
+    <bpmn:startEvent id="StartEvent_SolicitudAprobada" name="Solicitud aprobada y equipos reservados">
+      <bpmn:outgoing>Flow_Inicio_Cobrar</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="Task_CobrarDeposito" name="Cobrar depósito de garantía">
+      <bpmn:incoming>Flow_Inicio_Cobrar</bpmn:incoming>
+      <bpmn:outgoing>Flow_Cobrar_Preparar</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:boundaryEvent id="BoundaryEvent_CompensarCobro" name="Compensación" attachedToRef="Task_CobrarDeposito">
+      <bpmn:documentation>Evento de compensación adjunto al cobro: solo se activa si "Cobrar depósito de garantía" ya se completó y alguien solicita compensación. Conecta con el manejador mediante una asociación dirigida.</bpmn:documentation>
+      <bpmn:compensateEventDefinition id="CompensateEventDefinition_Boundary" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Task_DevolverDeposito" name="Devolver depósito de garantía" isForCompensation="true">
+      <bpmn:documentation>Manejador de compensación: deshace el efecto del cobro completado devolviendo el depósito al solicitante. No tiene flujos de secuencia; solo se alcanza mediante la asociación de compensación.</bpmn:documentation>
+    </bpmn:userTask>
+    <bpmn:subProcess id="SubProcess_PrepararPrestamo" name="Preparar préstamo">
+      <bpmn:documentation>Subproceso colapsado: inspección, acondicionamiento y embalaje de los equipos (detallado en los retos B, C y E).</bpmn:documentation>
+      <bpmn:incoming>Flow_Cobrar_Preparar</bpmn:incoming>
+      <bpmn:outgoing>Flow_Preparar_Entregar</bpmn:outgoing>
+      <bpmn:startEvent id="StartEvent_SubPreparar" name="Inicio de la preparación">
+        <bpmn:outgoing>Flow_SubPreparar_Inicio_Tarea</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:userTask id="Task_SubPreparar_Equipos" name="Inspeccionar, acondicionar y embalar (retos B, C y E)">
+        <bpmn:incoming>Flow_SubPreparar_Inicio_Tarea</bpmn:incoming>
+        <bpmn:outgoing>Flow_SubPreparar_Tarea_Fin</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:endEvent id="EndEvent_SubPreparar" name="Preparación completada">
+        <bpmn:incoming>Flow_SubPreparar_Tarea_Fin</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="Flow_SubPreparar_Inicio_Tarea" sourceRef="StartEvent_SubPreparar" targetRef="Task_SubPreparar_Equipos" />
+      <bpmn:sequenceFlow id="Flow_SubPreparar_Tarea_Fin" sourceRef="Task_SubPreparar_Equipos" targetRef="EndEvent_SubPreparar" />
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="BoundaryEvent_Cancelacion" name="Solicitante cancela el préstamo" attachedToRef="SubProcess_PrepararPrestamo">
+      <bpmn:documentation>Evento de mensaje interruptivo: al recibir la cancelación del solicitante detiene todo el trabajo pendiente de la preparación.</bpmn:documentation>
+      <bpmn:outgoing>Flow_Cancelacion_Compensar</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_Cancelacion" messageRef="Message_CancelacionSolicitante" />
+    </bpmn:boundaryEvent>
+    <bpmn:intermediateThrowEvent id="IntermediateThrowEvent_SolicitarCompensacion" name="Solicitar compensación del cobro">
+      <bpmn:documentation>Evento que SOLICITA la compensación: lanzamiento de compensación dirigido a la actividad "Cobrar depósito de garantía" (activityRef). Espera a que el manejador termine (waitForCompletion) antes de continuar.</bpmn:documentation>
+      <bpmn:incoming>Flow_Cancelacion_Compensar</bpmn:incoming>
+      <bpmn:outgoing>Flow_Compensar_Notificar</bpmn:outgoing>
+      <bpmn:compensateEventDefinition id="CompensateEventDefinition_Throw" activityRef="Task_CobrarDeposito" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:sendTask id="Task_NotificarCancelacion" name="Notificar cancelación y devolución" camunda:type="external" camunda:topic="notificar-cancelacion">
+      <bpmn:incoming>Flow_Compensar_Notificar</bpmn:incoming>
+      <bpmn:outgoing>Flow_Notificar_FinCancelado</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:endEvent id="EndEvent_PrestamoCancelado" name="Préstamo cancelado">
+      <bpmn:incoming>Flow_Notificar_FinCancelado</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:userTask id="Task_EntregarEquipos" name="Entregar equipos al solicitante">
+      <bpmn:incoming>Flow_Preparar_Entregar</bpmn:incoming>
+      <bpmn:outgoing>Flow_Entregar_Fin</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="EndEvent_EquiposEntregados" name="Equipos entregados">
+      <bpmn:incoming>Flow_Entregar_Fin</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_Inicio_Cobrar" sourceRef="StartEvent_SolicitudAprobada" targetRef="Task_CobrarDeposito" />
+    <bpmn:sequenceFlow id="Flow_Cobrar_Preparar" sourceRef="Task_CobrarDeposito" targetRef="SubProcess_PrepararPrestamo" />
+    <bpmn:sequenceFlow id="Flow_Preparar_Entregar" sourceRef="SubProcess_PrepararPrestamo" targetRef="Task_EntregarEquipos" />
+    <bpmn:sequenceFlow id="Flow_Entregar_Fin" sourceRef="Task_EntregarEquipos" targetRef="EndEvent_EquiposEntregados" />
+    <bpmn:sequenceFlow id="Flow_Cancelacion_Compensar" sourceRef="BoundaryEvent_Cancelacion" targetRef="IntermediateThrowEvent_SolicitarCompensacion" />
+    <bpmn:sequenceFlow id="Flow_Compensar_Notificar" sourceRef="IntermediateThrowEvent_SolicitarCompensacion" targetRef="Task_NotificarCancelacion" />
+    <bpmn:sequenceFlow id="Flow_Notificar_FinCancelado" sourceRef="Task_NotificarCancelacion" targetRef="EndEvent_PrestamoCancelado" />
+    <bpmn:association id="Association_Compensacion" associationDirection="One" sourceRef="BoundaryEvent_CompensarCobro" targetRef="Task_DevolverDeposito" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_RetoD">
+    <bpmndi:BPMNPlane id="BPMNPlane_RetoD" bpmnElement="Process_RetoD_Compensacion">
+      <bpmndi:BPMNShape id="StartEvent_SolicitudAprobada_di" bpmnElement="StartEvent_SolicitudAprobada">
+        <dc:Bounds x="212" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="159" y="145" width="142" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_CobrarDeposito_di" bpmnElement="Task_CobrarDeposito">
+        <dc:Bounds x="300" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_DevolverDeposito_di" bpmnElement="Task_DevolverDeposito">
+        <dc:Bounds x="300" y="250" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SubProcess_PrepararPrestamo_di" bpmnElement="SubProcess_PrepararPrestamo" isExpanded="false">
+        <dc:Bounds x="490" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="IntermediateThrowEvent_SolicitarCompensacion_di" bpmnElement="IntermediateThrowEvent_SolicitarCompensacion">
+        <dc:Bounds x="552" y="272" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="448" y="270" width="89" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_NotificarCancelacion_di" bpmnElement="Task_NotificarCancelacion">
+        <dc:Bounds x="640" y="250" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_PrestamoCancelado_di" bpmnElement="EndEvent_PrestamoCancelado">
+        <dc:Bounds x="792" y="272" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="785" y="315" width="51" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_EntregarEquipos_di" bpmnElement="Task_EntregarEquipos">
+        <dc:Bounds x="650" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_EquiposEntregados_di" bpmnElement="EndEvent_EquiposEntregados">
+        <dc:Bounds x="802" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="792" y="145" width="56" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BoundaryEvent_Cancelacion_di" bpmnElement="BoundaryEvent_Cancelacion">
+        <dc:Bounds x="552" y="142" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="608" y="190" width="104" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BoundaryEvent_CompensarCobro_di" bpmnElement="BoundaryEvent_CompensarCobro">
+        <dc:Bounds x="332" y="142" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="374" y="161" width="74" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_Inicio_Cobrar_di" bpmnElement="Flow_Inicio_Cobrar">
+        <di:waypoint x="248" y="120" />
+        <di:waypoint x="300" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Cobrar_Preparar_di" bpmnElement="Flow_Cobrar_Preparar">
+        <di:waypoint x="400" y="120" />
+        <di:waypoint x="490" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Preparar_Entregar_di" bpmnElement="Flow_Preparar_Entregar">
+        <di:waypoint x="590" y="120" />
+        <di:waypoint x="650" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Entregar_Fin_di" bpmnElement="Flow_Entregar_Fin">
+        <di:waypoint x="750" y="120" />
+        <di:waypoint x="802" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Cancelacion_Compensar_di" bpmnElement="Flow_Cancelacion_Compensar">
+        <di:waypoint x="570" y="178" />
+        <di:waypoint x="570" y="272" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Compensar_Notificar_di" bpmnElement="Flow_Compensar_Notificar">
+        <di:waypoint x="588" y="290" />
+        <di:waypoint x="640" y="290" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Notificar_FinCancelado_di" bpmnElement="Flow_Notificar_FinCancelado">
+        <di:waypoint x="740" y="290" />
+        <di:waypoint x="792" y="290" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_Compensacion_di" bpmnElement="Association_Compensacion">
+        <di:waypoint x="350" y="178" />
+        <di:waypoint x="350" y="250" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_RetoD_SubPreparar">
+    <bpmndi:BPMNPlane id="BPMNPlane_RetoD_SubPreparar" bpmnElement="SubProcess_PrepararPrestamo">
+      <bpmndi:BPMNShape id="StartEvent_SubPreparar_di" bpmnElement="StartEvent_SubPreparar">
+        <dc:Bounds x="152" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="130" y="145" width="80" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_SubPreparar_Equipos_di" bpmnElement="Task_SubPreparar_Equipos">
+        <dc:Bounds x="240" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_SubPreparar_di" bpmnElement="EndEvent_SubPreparar">
+        <dc:Bounds x="392" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="372" y="145" width="76" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_SubPreparar_Inicio_Tarea_di" bpmnElement="Flow_SubPreparar_Inicio_Tarea">
+        <di:waypoint x="188" y="120" />
+        <di:waypoint x="240" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_SubPreparar_Tarea_Fin_di" bpmnElement="Flow_SubPreparar_Tarea_Fin">
+        <di:waypoint x="340" y="120" />
+        <di:waypoint x="392" y="120" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

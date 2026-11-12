@@ -1,0 +1,64 @@
+{
+  "id": "facturaPago",
+  "type": "default",
+  "schemaVersion": 8,
+  "executionPlatform": "Camunda Platform",
+  "executionPlatformVersion": "7.20.0",
+  "components": [
+    {
+      "key": "nombre",
+      "label": "Nombre del cliente",
+      "type": "textfield",
+      "id": "Campo_nombre",
+      "disabled": true,
+      "layout": {
+        "row": "Fila_2",
+        "columns": null
+      }
+    },
+    {
+      "key": "domicilio",
+      "label": "Dirección del domicilio",
+      "type": "textfield",
+      "id": "Campo_domicilio",
+      "disabled": true,
+      "layout": {
+        "row": "Fila_3",
+        "columns": null
+      }
+    },
+    {
+      "key": "valor",
+      "label": "Valor de la visita técnica",
+      "type": "number",
+      "id": "Campo_valor",
+      "disabled": true,
+      "layout": {
+        "row": "Fila_4",
+        "columns": null
+      }
+    },
+    {
+      "key": "cobroExtra",
+      "label": "Cobro extra",
+      "type": "number",
+      "id": "Campo_cobroExtra",
+      "disabled": true,
+      "layout": {
+        "row": "Fila_5",
+        "columns": null
+      }
+    },
+    {
+      "key": "valorTotal",
+      "label": "Valor total de la visita técnica",
+      "type": "number",
+      "id": "Campo_valorTotal",
+      "disabled": true,
+      "layout": {
+        "row": "Fila_6",
+        "columns": null
+      }
+    }
+  ]
+}

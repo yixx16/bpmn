@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns:camunda="http://camunda.org/schema/1.0/dmn" xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" id="DefPresupuesto" name="Presupuesto EMSA" namespace="urn:emsa:dmn">
+  <decision camunda:historyTimeToLive="180" id="clasificarPresupuesto" name="Clasificar Presupuesto">
+    <decisionTable id="TablaPresupuesto" hitPolicy="UNIQUE">
+      <input id="EntradaSolucion" label="Tipo de solución">
+        <inputExpression id="TipoSolucion" typeRef="string">
+          <text>tipoSolucion</text>
+        </inputExpression>
+      </input>
+      <output id="SalidaValor" label="Valor" name="valor" typeRef="long" />
+      <rule id="Regla_manual">
+        <inputEntry id="Tipo_manual">
+          <text>"manual"</text>
+        </inputEntry>
+        <outputEntry id="Tarifa_manual">
+          <text>100000</text>
+        </outputEntry>
+      </rule>
+      <rule id="Regla_especializada">
+        <inputEntry id="Tipo_especializada">
+          <text>"especializada"</text>
+        </inputEntry>
+        <outputEntry id="Tarifa_especializada">
+          <text>250000</text>
+        </outputEntry>
+      </rule>
+      <rule id="Regla_sinIntervencion">
+        <inputEntry id="Tipo_sinIntervencion">
+          <text>"sinIntervencion"</text>
+        </inputEntry>
+        <outputEntry id="Tarifa_sinIntervencion">
+          <text>20000</text>
+        </outputEntry>
+      </rule>
+      <rule id="Regla_sinSolucion">
+        <inputEntry id="Tipo_sinSolucion">
+          <text>"sinSolucion"</text>
+        </inputEntry>
+        <outputEntry id="Tarifa_sinSolucion">
+          <text>20000</text>
+        </outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+</definitions>

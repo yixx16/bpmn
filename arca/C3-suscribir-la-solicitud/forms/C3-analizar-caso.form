@@ -1,0 +1,42 @@
+{
+  "components": [
+    {
+      "type": "number",
+      "key": "puntaje",
+      "label": "Puntaje compuesto",
+      "disabled": true,
+      "id": "Field_C3_analizar_caso_1"
+    },
+    {
+      "type": "textfield",
+      "key": "tier",
+      "label": "Tier",
+      "disabled": true,
+      "id": "Field_C3_analizar_caso_2"
+    },
+    {
+      "type": "textarea",
+      "key": "recomendacionActuario",
+      "label": "Recomendación del actuario",
+      "validate": {
+        "required": true
+      },
+      "id": "Field_C3_analizar_caso_3"
+    },
+    {
+      "type": "textfield",
+      "key": "condicionesSugeridas",
+      "label": "Condiciones sugeridas",
+      "id": "Field_C3_analizar_caso_4"
+    }
+  ],
+  "type": "default",
+  "id": "C3-analizar-caso",
+  "executionPlatform": "Camunda Platform",
+  "executionPlatformVersion": "7.24.0",
+  "exporter": {
+    "name": "Claude Code",
+    "version": "1.0"
+  },
+  "schemaVersion": 4
+}

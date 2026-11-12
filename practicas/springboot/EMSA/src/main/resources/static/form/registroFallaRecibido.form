@@ -1,0 +1,51 @@
+{
+  "id": "registroFallaRecibido",
+  "type": "default",
+  "schemaVersion": 8,
+  "executionPlatform": "Camunda Platform",
+  "executionPlatformVersion": "7.20.0",
+  "components": [
+    {
+      "key": "nombre",
+      "label": "Nombre completo",
+      "type": "textfield",
+      "id": "Campo_nombre",
+      "validate": {
+        "required": true,
+        "pattern": "^[^0-9]+$"
+      },
+      "description": "Escriba su nombre sin números.",
+      "layout": {
+        "row": "Fila_2",
+        "columns": null
+      }
+    },
+    {
+      "key": "domicilio",
+      "label": "Dirección de residencia",
+      "type": "textfield",
+      "id": "Campo_domicilio",
+      "validate": {
+        "required": true
+      },
+      "layout": {
+        "row": "Fila_3",
+        "columns": null
+      }
+    },
+    {
+      "key": "falla",
+      "label": "Falla reportada",
+      "type": "textarea",
+      "id": "Campo_falla",
+      "validate": {
+        "required": true
+      },
+      "description": "Describa el problema que desea reportar.",
+      "layout": {
+        "row": "Fila_4",
+        "columns": null
+      }
+    }
+  ]
+}

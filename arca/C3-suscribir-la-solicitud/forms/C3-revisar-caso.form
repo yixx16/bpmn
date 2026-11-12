@@ -1,0 +1,55 @@
+{
+  "components": [
+    {
+      "type": "number",
+      "key": "puntaje",
+      "label": "Puntaje compuesto",
+      "disabled": true,
+      "id": "Field_C3_revisar_caso_1"
+    },
+    {
+      "type": "textfield",
+      "key": "tier",
+      "label": "Tier",
+      "disabled": true,
+      "id": "Field_C3_revisar_caso_2"
+    },
+    {
+      "type": "radio",
+      "key": "decision",
+      "label": "Decisión",
+      "validate": {
+        "required": true
+      },
+      "values": [
+        {
+          "label": "Aceptar (ACCEPT)",
+          "value": "ACCEPT"
+        },
+        {
+          "label": "Rechazar (DECLINE)",
+          "value": "DECLINE"
+        }
+      ],
+      "id": "Field_C3_revisar_caso_3"
+    },
+    {
+      "type": "textarea",
+      "key": "justificacionDecision",
+      "label": "Justificación",
+      "validate": {
+        "required": true
+      },
+      "id": "Field_C3_revisar_caso_4"
+    }
+  ],
+  "type": "default",
+  "id": "C3-revisar-caso",
+  "executionPlatform": "Camunda Platform",
+  "executionPlatformVersion": "7.24.0",
+  "exporter": {
+    "name": "Claude Code",
+    "version": "1.0"
+  },
+  "schemaVersion": 4
+}

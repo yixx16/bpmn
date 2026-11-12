@@ -1,0 +1,49 @@
+{
+  "components": [
+    {
+      "type": "select",
+      "key": "motivoCambio",
+      "label": "Motivo del cambio",
+      "validate": {
+        "required": true
+      },
+      "values": [
+        {
+          "label": "Nueva evidencia de siniestralidad (C11, G1)",
+          "value": "SINIESTRALIDAD"
+        },
+        {
+          "label": "Deriva del modelo detectada",
+          "value": "DERIVA"
+        },
+        {
+          "label": "Apertura de vertical o jurisdicción",
+          "value": "NUEVO_VERTICAL"
+        },
+        {
+          "label": "Fallo o norma relevante (S5)",
+          "value": "FALLO_NORMA"
+        }
+      ],
+      "id": "Field_G3_consolidar_propuesta_1"
+    },
+    {
+      "type": "textarea",
+      "key": "propuestaCambio",
+      "label": "Propuesta de cambio",
+      "validate": {
+        "required": true
+      },
+      "id": "Field_G3_consolidar_propuesta_2"
+    }
+  ],
+  "type": "default",
+  "id": "G3-consolidar-propuesta",
+  "executionPlatform": "Camunda Platform",
+  "executionPlatformVersion": "7.24.0",
+  "exporter": {
+    "name": "Claude Code",
+    "version": "1.0"
+  },
+  "schemaVersion": 4
+}

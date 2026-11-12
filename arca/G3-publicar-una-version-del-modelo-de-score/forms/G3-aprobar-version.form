@@ -1,0 +1,56 @@
+{
+  "components": [
+    {
+      "type": "textfield",
+      "key": "versionPropuesta",
+      "label": "Versión propuesta",
+      "disabled": true,
+      "id": "Field_G3_aprobar_version_1"
+    },
+    {
+      "type": "textarea",
+      "key": "notaCambios",
+      "label": "Nota de cambios",
+      "disabled": true,
+      "id": "Field_G3_aprobar_version_2"
+    },
+    {
+      "type": "radio",
+      "key": "decisionComite",
+      "label": "Decisión del comité",
+      "validate": {
+        "required": true
+      },
+      "values": [
+        {
+          "label": "Aprobada",
+          "value": "APROBADA"
+        },
+        {
+          "label": "Requiere ajustes",
+          "value": "AJUSTES"
+        },
+        {
+          "label": "Rechazada",
+          "value": "RECHAZADA"
+        }
+      ],
+      "id": "Field_G3_aprobar_version_3"
+    },
+    {
+      "type": "textarea",
+      "key": "observacionesComite",
+      "label": "Observaciones del comité",
+      "id": "Field_G3_aprobar_version_4"
+    }
+  ],
+  "type": "default",
+  "id": "G3-aprobar-version",
+  "executionPlatform": "Camunda Platform",
+  "executionPlatformVersion": "7.24.0",
+  "exporter": {
+    "name": "Claude Code",
+    "version": "1.0"
+  },
+  "schemaVersion": 4
+}

@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_RetoE" name="Reto E - Subproceso ad hoc" targetNamespace="http://universidad.edu/prestamos/bpmn" exporter="Camunda Modeler" exporterVersion="5.51.1" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.24.0">
+  <bpmn:process id="Process_RetoE_AdHoc" name="Reto E - Acondicionamiento ad hoc de los equipos" isExecutable="false" camunda:historyTimeToLive="180">
+    <bpmn:documentation>Fragmento del proceso "Gestión de solicitudes de préstamo de equipos universitarios". Se integra dentro del subproceso "Preparar préstamo", después de la inspección de los equipos (reto B) y antes del embalaje y la entrega. El subproceso ad hoc "Acondicionar equipos" contiene limpiar, etiquetar y fotografiar sin flujos de secuencia: el técnico decide el orden (ordering = Parallel) y puede repetir cualquiera de ellas. Condición de finalización: limpiezaSatisfactoria AND etiquetadoSatisfactorio AND fotografiaSatisfactoria. Al cumplirse, el subproceso concluye (cancelRemainingInstances = true) y la preparación continúa con el embalaje. Nota Camunda 7: el motor de Camunda Platform 7 no ejecuta subprocesos ad hoc, por lo que este fragmento se mantiene como no ejecutable (isExecutable = false); Camunda Modeler lo abre y edita sin problema.</bpmn:documentation>
+    <bpmn:startEvent id="StartEvent_EquiposInspeccionados" name="Equipos inspeccionados">
+      <bpmn:outgoing>Flow_Inicio_AdHoc</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:adHocSubProcess id="AdHocSubProcess_Acondicionar" name="Acondicionar equipos" ordering="Parallel">
+      <bpmn:documentation>Subproceso ad hoc: las tres actividades no tienen flujos de secuencia; se ejecutan en cualquier orden, de forma simultánea si se desea, y tantas veces como haga falta hasta quedar satisfactorias.</bpmn:documentation>
+      <bpmn:incoming>Flow_Inicio_AdHoc</bpmn:incoming>
+      <bpmn:outgoing>Flow_AdHoc_Embalar</bpmn:outgoing>
+      <bpmn:manualTask id="Task_LimpiarEquipos" name="Limpiar equipos">
+        <bpmn:documentation>Repetible hasta que la limpieza sea satisfactoria (limpiezaSatisfactoria = true).</bpmn:documentation>
+      </bpmn:manualTask>
+      <bpmn:manualTask id="Task_EtiquetarEquipos" name="Etiquetar equipos">
+        <bpmn:documentation>Repetible hasta que el etiquetado sea satisfactorio (etiquetadoSatisfactorio = true).</bpmn:documentation>
+      </bpmn:manualTask>
+      <bpmn:manualTask id="Task_FotografiarEquipos" name="Fotografiar equipos">
+        <bpmn:documentation>Repetible hasta que las fotografías sean satisfactorias (fotografiaSatisfactoria = true).</bpmn:documentation>
+      </bpmn:manualTask>
+      <bpmn:completionCondition xsi:type="bpmn:tFormalExpression">${limpiezaSatisfactoria and etiquetadoSatisfactorio and fotografiaSatisfactoria}</bpmn:completionCondition>
+    </bpmn:adHocSubProcess>
+    <bpmn:manualTask id="Task_EmbalarEquipos" name="Embalar equipos para la entrega">
+      <bpmn:incoming>Flow_AdHoc_Embalar</bpmn:incoming>
+      <bpmn:outgoing>Flow_Embalar_Fin</bpmn:outgoing>
+    </bpmn:manualTask>
+    <bpmn:endEvent id="EndEvent_PreparacionCompletada" name="Preparación completada">
+      <bpmn:incoming>Flow_Embalar_Fin</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_Inicio_AdHoc" sourceRef="StartEvent_EquiposInspeccionados" targetRef="AdHocSubProcess_Acondicionar" />
+    <bpmn:sequenceFlow id="Flow_AdHoc_Embalar" name="Las tres actividades satisfactorias" sourceRef="AdHocSubProcess_Acondicionar" targetRef="Task_EmbalarEquipos" />
+    <bpmn:sequenceFlow id="Flow_Embalar_Fin" sourceRef="Task_EmbalarEquipos" targetRef="EndEvent_PreparacionCompletada" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_RetoE">
+    <bpmndi:BPMNPlane id="BPMNPlane_RetoE" bpmnElement="Process_RetoE_AdHoc">
+      <bpmndi:BPMNShape id="StartEvent_EquiposInspeccionados_di" bpmnElement="StartEvent_EquiposInspeccionados">
+        <dc:Bounds x="152" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="132" y="225" width="76" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="AdHocSubProcess_Acondicionar_di" bpmnElement="AdHocSubProcess_Acondicionar" isExpanded="true">
+        <dc:Bounds x="240" y="80" width="440" height="240" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_LimpiarEquipos_di" bpmnElement="Task_LimpiarEquipos">
+        <dc:Bounds x="280" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_EtiquetarEquipos_di" bpmnElement="Task_EtiquetarEquipos">
+        <dc:Bounds x="410" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_FotografiarEquipos_di" bpmnElement="Task_FotografiarEquipos">
+        <dc:Bounds x="540" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_EmbalarEquipos_di" bpmnElement="Task_EmbalarEquipos">
+        <dc:Bounds x="760" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_PreparacionCompletada_di" bpmnElement="EndEvent_PreparacionCompletada">
+        <dc:Bounds x="912" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="900" y="225" width="60" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_Inicio_AdHoc_di" bpmnElement="Flow_Inicio_AdHoc">
+        <di:waypoint x="188" y="200" />
+        <di:waypoint x="240" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_AdHoc_Embalar_di" bpmnElement="Flow_AdHoc_Embalar">
+        <di:waypoint x="680" y="200" />
+        <di:waypoint x="760" y="200" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="688" y="156" width="65" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Embalar_Fin_di" bpmnElement="Flow_Embalar_Fin">
+        <di:waypoint x="860" y="200" />
+        <di:waypoint x="912" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

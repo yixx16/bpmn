@@ -1,0 +1,31 @@
+{
+  "id": "agendarVisitaTecnica",
+  "type": "default",
+  "schemaVersion": 8,
+  "executionPlatform": "Camunda Platform",
+  "executionPlatformVersion": "7.20.0",
+  "components": [
+    {
+      "key": "nombre",
+      "label": "Nombre del cliente",
+      "type": "textfield",
+      "id": "Campo_nombre",
+      "disabled": true,
+      "layout": {
+        "row": "Fila_2",
+        "columns": null
+      }
+    },
+    {
+      "key": "domicilio",
+      "label": "Dirección de la visita",
+      "type": "textfield",
+      "id": "Campo_domicilio",
+      "disabled": true,
+      "layout": {
+        "row": "Fila_3",
+        "columns": null
+      }
+    }
+  ]
+}

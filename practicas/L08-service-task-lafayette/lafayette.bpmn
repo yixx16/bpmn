@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_LaFayette" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Claude Code" exporterVersion="1.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.24.0">
+  <bpmn:process id="Process_LaFayette" name="LaFayette escape" isExecutable="true" camunda:historyTimeToLive="180">
+    <bpmn:startEvent id="StartEvent_NeedsToEscape" name="Lafayette needs to escape France">
+      <bpmn:outgoing>Flow_Start_Prepare</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="Task_PrepareForDeparture" name="Prepare for departure" camunda:formKey="camunda-forms:deployment:departureForm.form">
+      <bpmn:incoming>Flow_Start_Prepare</bpmn:incoming>
+      <bpmn:outgoing>Flow_Prepare_Gateway</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gateway_WhoToAsk" name="Who to ask for help?">
+      <bpmn:incoming>Flow_Prepare_Gateway</bpmn:incoming>
+      <bpmn:outgoing>Flow_Austria</bpmn:outgoing>
+      <bpmn:outgoing>Flow_JeanXavier</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Task_SendRequestForHelp" name="Send request for help" camunda:type="external" camunda:topic="SendLetter">
+      <bpmn:incoming>Flow_Austria</bpmn:incoming>
+      <bpmn:outgoing>Flow_Send_Join</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:userTask id="Task_GetHelpFromJeanXavier" name="Get help from Jean-Xavier" camunda:formKey="camunda-forms:deployment:askForHelp.form">
+      <bpmn:incoming>Flow_JeanXavier</bpmn:incoming>
+      <bpmn:outgoing>Flow_GetHelp_Join</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gateway_Join">
+      <bpmn:incoming>Flow_Send_Join</bpmn:incoming>
+      <bpmn:incoming>Flow_GetHelp_Join</bpmn:incoming>
+      <bpmn:outgoing>Flow_Join_Serve</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="Task_ServeTimeOverseas" name="Serve time overseas">
+      <bpmn:incoming>Flow_Join_Serve</bpmn:incoming>
+      <bpmn:outgoing>Flow_Serve_End</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="EndEvent_LafayetteIsSafe" name="Lafayette is safe">
+      <bpmn:incoming>Flow_Serve_End</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_Start_Prepare" sourceRef="StartEvent_NeedsToEscape" targetRef="Task_PrepareForDeparture" />
+    <bpmn:sequenceFlow id="Flow_Prepare_Gateway" sourceRef="Task_PrepareForDeparture" targetRef="Gateway_WhoToAsk" />
+    <bpmn:sequenceFlow id="Flow_Austria" name="Austria" sourceRef="Gateway_WhoToAsk" targetRef="Task_SendRequestForHelp">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">#{help == "Austria"}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_JeanXavier" name="Jean - Xavier" sourceRef="Gateway_WhoToAsk" targetRef="Task_GetHelpFromJeanXavier">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">#{help == "Jean-Xavier"}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Send_Join" sourceRef="Task_SendRequestForHelp" targetRef="Gateway_Join" />
+    <bpmn:sequenceFlow id="Flow_GetHelp_Join" sourceRef="Task_GetHelpFromJeanXavier" targetRef="Gateway_Join" />
+    <bpmn:sequenceFlow id="Flow_Join_Serve" sourceRef="Gateway_Join" targetRef="Task_ServeTimeOverseas" />
+    <bpmn:sequenceFlow id="Flow_Serve_End" sourceRef="Task_ServeTimeOverseas" targetRef="EndEvent_LafayetteIsSafe" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_LaFayette">
+    <bpmndi:BPMNPlane id="BPMNPlane_LaFayette" bpmnElement="Process_LaFayette">
+      <bpmndi:BPMNShape id="StartEvent_NeedsToEscape_di" bpmnElement="StartEvent_NeedsToEscape">
+        <dc:Bounds x="152" y="222" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="130" y="265" width="80" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_PrepareForDeparture_di" bpmnElement="Task_PrepareForDeparture">
+        <dc:Bounds x="240" y="200" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_WhoToAsk_di" bpmnElement="Gateway_WhoToAsk" isMarkerVisible="true">
+        <dc:Bounds x="395" y="215" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="384" y="272" width="72" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_SendRequestForHelp_di" bpmnElement="Task_SendRequestForHelp">
+        <dc:Bounds x="530" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_GetHelpFromJeanXavier_di" bpmnElement="Task_GetHelpFromJeanXavier">
+        <dc:Bounds x="530" y="200" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_Join_di" bpmnElement="Gateway_Join" isMarkerVisible="true">
+        <dc:Bounds x="695" y="215" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ServeTimeOverseas_di" bpmnElement="Task_ServeTimeOverseas">
+        <dc:Bounds x="800" y="200" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_LafayetteIsSafe_di" bpmnElement="EndEvent_LafayetteIsSafe">
+        <dc:Bounds x="952" y="222" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="930" y="265" width="80" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_Start_Prepare_di" bpmnElement="Flow_Start_Prepare">
+        <di:waypoint x="188" y="240" />
+        <di:waypoint x="240" y="240" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Prepare_Gateway_di" bpmnElement="Flow_Prepare_Gateway">
+        <di:waypoint x="340" y="240" />
+        <di:waypoint x="395" y="240" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Austria_di" bpmnElement="Flow_Austria">
+        <di:waypoint x="420" y="215" />
+        <di:waypoint x="420" y="120" />
+        <di:waypoint x="530" y="120" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="456" y="102" width="36" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_JeanXavier_di" bpmnElement="Flow_JeanXavier">
+        <di:waypoint x="445" y="240" />
+        <di:waypoint x="530" y="240" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="456" y="222" width="65" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Send_Join_di" bpmnElement="Flow_Send_Join">
+        <di:waypoint x="630" y="120" />
+        <di:waypoint x="720" y="120" />
+        <di:waypoint x="720" y="215" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_GetHelp_Join_di" bpmnElement="Flow_GetHelp_Join">
+        <di:waypoint x="630" y="240" />
+        <di:waypoint x="695" y="240" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Join_Serve_di" bpmnElement="Flow_Join_Serve">
+        <di:waypoint x="745" y="240" />
+        <di:waypoint x="800" y="240" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Serve_End_di" bpmnElement="Flow_Serve_End">
+        <di:waypoint x="900" y="240" />
+        <di:waypoint x="952" y="240" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

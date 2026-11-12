@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_RetoA" name="Reto A - Compuerta inclusiva" targetNamespace="http://universidad.edu/prestamos/bpmn" exporter="Camunda Modeler" exporterVersion="5.51.1" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.24.0">
+  <bpmn:process id="Process_RetoA_Servicios" name="Reto A - Selección y sincronización de servicios (capacitación / transporte)" isExecutable="true" camunda:historyTimeToLive="180">
+    <bpmn:documentation>Fragmento del proceso "Gestión de solicitudes de préstamo de equipos universitarios". Se integra justo después de la aprobación de la solicitud y antes de la entrega de los equipos. Regla adicional declarada: toda solicitud aprobada registra al menos un servicio (capacitación, transporte o ambos), por lo que la compuerta inclusiva siempre activa al menos una rama y no requiere flujo por defecto.</bpmn:documentation>
+    <bpmn:startEvent id="StartEvent_SolicitudAprobada" name="Solicitud aprobada">
+      <bpmn:outgoing>Flow_Inicio_Confirmar</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="Task_ConfirmarServicios" name="Confirmar servicios requeridos">
+      <bpmn:documentation>El coordinador de préstamos verifica con el solicitante qué servicios necesita: capacitación en el uso del equipo, transporte al lugar de uso, o ambos. Formulario generado (Camunda 7): las dos variables booleanas que evalúa la compuerta inclusiva.</bpmn:documentation>
+      <bpmn:extensionElements>
+        <camunda:formData>
+          <camunda:formField id="requiereCapacitacion" label="¿Requiere capacitación?" type="boolean" defaultValue="true" />
+          <camunda:formField id="requiereTransporte" label="¿Requiere transporte?" type="boolean" defaultValue="false" />
+        </camunda:formData>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Inicio_Confirmar</bpmn:incoming>
+      <bpmn:outgoing>Flow_Confirmar_Split</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:inclusiveGateway id="Gateway_Inclusivo_Split" name="¿Qué servicios requiere?">
+      <bpmn:incoming>Flow_Confirmar_Split</bpmn:incoming>
+      <bpmn:outgoing>Flow_Split_Capacitacion</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Split_Transporte</bpmn:outgoing>
+    </bpmn:inclusiveGateway>
+    <bpmn:userTask id="Task_Capacitacion" name="Capacitar en el uso del equipo">
+      <bpmn:incoming>Flow_Split_Capacitacion</bpmn:incoming>
+      <bpmn:outgoing>Flow_Capacitacion_Join</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_Transporte" name="Coordinar transporte de los equipos">
+      <bpmn:incoming>Flow_Split_Transporte</bpmn:incoming>
+      <bpmn:outgoing>Flow_Transporte_Join</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:inclusiveGateway id="Gateway_Inclusivo_Join" name="Servicios solicitados terminados">
+      <bpmn:incoming>Flow_Capacitacion_Join</bpmn:incoming>
+      <bpmn:incoming>Flow_Transporte_Join</bpmn:incoming>
+      <bpmn:outgoing>Flow_Join_Entregar</bpmn:outgoing>
+    </bpmn:inclusiveGateway>
+    <bpmn:userTask id="Task_EntregarEquipos" name="Entregar equipos al solicitante">
+      <bpmn:incoming>Flow_Join_Entregar</bpmn:incoming>
+      <bpmn:outgoing>Flow_Entregar_Fin</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="EndEvent_EquiposEntregados" name="Equipos entregados">
+      <bpmn:incoming>Flow_Entregar_Fin</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_Inicio_Confirmar" sourceRef="StartEvent_SolicitudAprobada" targetRef="Task_ConfirmarServicios" />
+    <bpmn:sequenceFlow id="Flow_Confirmar_Split" sourceRef="Task_ConfirmarServicios" targetRef="Gateway_Inclusivo_Split" />
+    <bpmn:sequenceFlow id="Flow_Split_Capacitacion" name="Requiere capacitación" sourceRef="Gateway_Inclusivo_Split" targetRef="Task_Capacitacion">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${requiereCapacitacion == true}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Split_Transporte" name="Requiere transporte" sourceRef="Gateway_Inclusivo_Split" targetRef="Task_Transporte">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${requiereTransporte == true}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Capacitacion_Join" sourceRef="Task_Capacitacion" targetRef="Gateway_Inclusivo_Join" />
+    <bpmn:sequenceFlow id="Flow_Transporte_Join" sourceRef="Task_Transporte" targetRef="Gateway_Inclusivo_Join" />
+    <bpmn:sequenceFlow id="Flow_Join_Entregar" sourceRef="Gateway_Inclusivo_Join" targetRef="Task_EntregarEquipos" />
+    <bpmn:sequenceFlow id="Flow_Entregar_Fin" sourceRef="Task_EntregarEquipos" targetRef="EndEvent_EquiposEntregados" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_RetoA">
+    <bpmndi:BPMNPlane id="BPMNPlane_RetoA" bpmnElement="Process_RetoA_Servicios">
+      <bpmndi:BPMNShape id="StartEvent_SolicitudAprobada_di" bpmnElement="StartEvent_SolicitudAprobada">
+        <dc:Bounds x="152" y="232" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="126" y="275" width="88" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ConfirmarServicios_di" bpmnElement="Task_ConfirmarServicios">
+        <dc:Bounds x="240" y="210" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_Inclusivo_Split_di" bpmnElement="Gateway_Inclusivo_Split" isMarkerVisible="true">
+        <dc:Bounds x="395" y="225" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="380" y="282" width="80" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Capacitacion_di" bpmnElement="Task_Capacitacion">
+        <dc:Bounds x="500" y="110" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Transporte_di" bpmnElement="Task_Transporte">
+        <dc:Bounds x="500" y="310" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_Inclusivo_Join_di" bpmnElement="Gateway_Inclusivo_Join" isMarkerVisible="true">
+        <dc:Bounds x="655" y="225" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="636" y="282" width="88" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_EntregarEquipos_di" bpmnElement="Task_EntregarEquipos">
+        <dc:Bounds x="760" y="210" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_EquiposEntregados_di" bpmnElement="EndEvent_EquiposEntregados">
+        <dc:Bounds x="912" y="232" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="888" y="275" width="84" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_Inicio_Confirmar_di" bpmnElement="Flow_Inicio_Confirmar">
+        <di:waypoint x="188" y="250" />
+        <di:waypoint x="240" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Confirmar_Split_di" bpmnElement="Flow_Confirmar_Split">
+        <di:waypoint x="340" y="250" />
+        <di:waypoint x="395" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Split_Capacitacion_di" bpmnElement="Flow_Split_Capacitacion">
+        <di:waypoint x="420" y="225" />
+        <di:waypoint x="420" y="150" />
+        <di:waypoint x="500" y="150" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="425" y="118" width="70" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Split_Transporte_di" bpmnElement="Flow_Split_Transporte">
+        <di:waypoint x="420" y="275" />
+        <di:waypoint x="420" y="350" />
+        <di:waypoint x="500" y="350" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="425" y="355" width="70" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Capacitacion_Join_di" bpmnElement="Flow_Capacitacion_Join">
+        <di:waypoint x="600" y="150" />
+        <di:waypoint x="680" y="150" />
+        <di:waypoint x="680" y="225" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Transporte_Join_di" bpmnElement="Flow_Transporte_Join">
+        <di:waypoint x="600" y="350" />
+        <di:waypoint x="680" y="350" />
+        <di:waypoint x="680" y="275" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Join_Entregar_di" bpmnElement="Flow_Join_Entregar">
+        <di:waypoint x="705" y="250" />
+        <di:waypoint x="760" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Entregar_Fin_di" bpmnElement="Flow_Entregar_Fin">
+        <di:waypoint x="860" y="250" />
+        <di:waypoint x="912" y="250" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

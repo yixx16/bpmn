@@ -1,0 +1,31 @@
+{
+  "components": [
+    {
+      "label": "Book to Pack*",
+      "type": "textfield",
+      "id": "Field_book",
+      "key": "book",
+      "description": "What book would you like to bring on the trip"
+    },
+    {
+      "label": "Who can help?**",
+      "type": "textfield",
+      "id": "Field_help",
+      "key": "help",
+      "description": "Who do you want to ask for help",
+      "validate": {
+        "required": true,
+        "pattern": "Jean-Xavier|Austria"
+      }
+    }
+  ],
+  "type": "default",
+  "id": "camunda-forms-deployment-departureForm",
+  "executionPlatform": "Camunda Platform",
+  "executionPlatformVersion": "7.24.0",
+  "exporter": {
+    "name": "Claude Code",
+    "version": "1.0"
+  },
+  "schemaVersion": 4
+}

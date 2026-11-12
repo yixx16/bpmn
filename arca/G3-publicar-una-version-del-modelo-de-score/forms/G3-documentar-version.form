@@ -1,0 +1,36 @@
+{
+  "components": [
+    {
+      "type": "textfield",
+      "key": "versionPropuesta",
+      "label": "Versión propuesta",
+      "disabled": true,
+      "id": "Field_G3_documentar_version_1"
+    },
+    {
+      "type": "textfield",
+      "key": "motivoValidacion",
+      "label": "Resultado de la validación",
+      "disabled": true,
+      "id": "Field_G3_documentar_version_2"
+    },
+    {
+      "type": "textarea",
+      "key": "notaCambios",
+      "label": "Nota de cambios para Suscripción y brokers",
+      "validate": {
+        "required": true
+      },
+      "id": "Field_G3_documentar_version_3"
+    }
+  ],
+  "type": "default",
+  "id": "G3-documentar-version",
+  "executionPlatform": "Camunda Platform",
+  "executionPlatformVersion": "7.24.0",
+  "exporter": {
+    "name": "Claude Code",
+    "version": "1.0"
+  },
+  "schemaVersion": 4
+}

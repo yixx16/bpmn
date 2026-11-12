@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Def_gestionFallasEMSA" targetNamespace="urn:emsa:bpmn">
+  <bpmn:process id="gestionFallasEMSA" name="Gestión de fallas técnicas EMSA" isExecutable="true" camunda:historyTimeToLive="180" camunda:isStartableInTasklist="true">
+    <bpmn:laneSet id="Roles">
+      <bpmn:lane id="Lane_1" name="Operador">
+        <bpmn:flowNodeRef>reporteRecibido</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>agendarVisita</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_2" name="Técnico">
+        <bpmn:flowNodeRef>visitaTecnica</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>clasificarPresupuesto</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_3" name="Tesorería">
+        <bpmn:flowNodeRef>abrirFacturacion</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>generarFacturaDePago</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>guardarFactura</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cerrarFacturacion</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>entradaPago</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>recibirPago</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>pagoCompleto</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reporteGestionado</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="reporteRecibido" name="Registro de falla recibido" camunda:formRef="registroFallaRecibido" camunda:formRefBinding="deployment">
+      <bpmn:outgoing>inicioAgenda</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="agendarVisita" name="Agendar visita técnica" camunda:formRef="agendarVisitaTecnica" camunda:formRefBinding="deployment">
+      <bpmn:incoming>inicioAgenda</bpmn:incoming>
+      <bpmn:outgoing>agendaVisita</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:callActivity id="visitaTecnica" name="Realizar visita técnica" calledElement="realizarVisitaTecnica" camunda:calledElementBinding="deployment">
+      <bpmn:extensionElements>
+        <camunda:in source="nombre" target="nombre" />
+        <camunda:in source="domicilio" target="domicilio" />
+        <camunda:in source="falla" target="falla" />
+        <camunda:out sourceExpression="${visita ? tipoSolucion : 'sinIntervencion'}" target="tipoSolucion" />
+        <camunda:out sourceExpression="${visita ? cobroExtra : 0}" target="cobroExtra" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>agendaVisita</bpmn:incoming>
+      <bpmn:outgoing>visitaPresupuesto</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:businessRuleTask id="clasificarPresupuesto" name="Clasificar presupuesto" camunda:decisionRef="clasificarPresupuesto" camunda:decisionRefBinding="deployment" camunda:resultVariable="valor" camunda:mapDecisionResult="singleEntry">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:outputParameter name="valorTotal">${valor + cobroExtra}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+      <bpmn:incoming>visitaPresupuesto</bpmn:incoming>
+      <bpmn:outgoing>presupuestoFactura</bpmn:outgoing>
+    </bpmn:businessRuleTask>
+    <bpmn:parallelGateway id="abrirFacturacion">
+      <bpmn:incoming>presupuestoFactura</bpmn:incoming>
+      <bpmn:outgoing>ramaFactura</bpmn:outgoing>
+      <bpmn:outgoing>ramaGuardar</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:userTask id="generarFacturaDePago" name="Generar factura de pago" camunda:formRef="facturaPago" camunda:formRefBinding="deployment">
+      <bpmn:incoming>ramaFactura</bpmn:incoming>
+      <bpmn:outgoing>facturaGenerada</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:serviceTask id="guardarFactura" name="Guardar factura de pago" camunda:class="com.soft1.GuardarFactura">
+      <bpmn:incoming>ramaGuardar</bpmn:incoming>
+      <bpmn:outgoing>facturaGuardada</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:parallelGateway id="cerrarFacturacion">
+      <bpmn:incoming>facturaGenerada</bpmn:incoming>
+      <bpmn:incoming>facturaGuardada</bpmn:incoming>
+      <bpmn:outgoing>facturaPago</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:exclusiveGateway id="entradaPago">
+      <bpmn:incoming>facturaPago</bpmn:incoming>
+      <bpmn:incoming>reintentarPago</bpmn:incoming>
+      <bpmn:outgoing>solicitarPago</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="recibirPago" name="Recibir pago">
+      <bpmn:extensionElements>
+        <camunda:formData>
+          <camunda:formField id="valorPagado" label="Ingrese el valor que pagó" type="long">
+            <camunda:validation>
+              <camunda:constraint name="required" />
+              <camunda:constraint name="min" config="0" />
+            </camunda:validation>
+          </camunda:formField>
+        </camunda:formData>
+      </bpmn:extensionElements>
+      <bpmn:incoming>solicitarPago</bpmn:incoming>
+      <bpmn:outgoing>validarPago</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="pagoCompleto" name="¿Pago completo?" default="reintentarPago">
+      <bpmn:incoming>validarPago</bpmn:incoming>
+      <bpmn:outgoing>reintentarPago</bpmn:outgoing>
+      <bpmn:outgoing>pagoConfirmado</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:endEvent id="reporteGestionado" name="Reporte manejado exitosamente">
+      <bpmn:incoming>pagoConfirmado</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="inicioAgenda" sourceRef="reporteRecibido" targetRef="agendarVisita" />
+    <bpmn:sequenceFlow id="agendaVisita" sourceRef="agendarVisita" targetRef="visitaTecnica" />
+    <bpmn:sequenceFlow id="visitaPresupuesto" sourceRef="visitaTecnica" targetRef="clasificarPresupuesto" />
+    <bpmn:sequenceFlow id="presupuestoFactura" sourceRef="clasificarPresupuesto" targetRef="abrirFacturacion" />
+    <bpmn:sequenceFlow id="ramaFactura" sourceRef="abrirFacturacion" targetRef="generarFacturaDePago" />
+    <bpmn:sequenceFlow id="ramaGuardar" sourceRef="abrirFacturacion" targetRef="guardarFactura" />
+    <bpmn:sequenceFlow id="facturaGenerada" sourceRef="generarFacturaDePago" targetRef="cerrarFacturacion" />
+    <bpmn:sequenceFlow id="facturaGuardada" sourceRef="guardarFactura" targetRef="cerrarFacturacion" />
+    <bpmn:sequenceFlow id="facturaPago" sourceRef="cerrarFacturacion" targetRef="entradaPago" />
+    <bpmn:sequenceFlow id="solicitarPago" sourceRef="entradaPago" targetRef="recibirPago" />
+    <bpmn:sequenceFlow id="validarPago" sourceRef="recibirPago" targetRef="pagoCompleto" />
+    <bpmn:sequenceFlow id="reintentarPago" sourceRef="pagoCompleto" targetRef="entradaPago" name="No" />
+    <bpmn:sequenceFlow id="pagoConfirmado" sourceRef="pagoCompleto" targetRef="reporteGestionado" name="Sí">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${valorPagado == valorTotal}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+  </bpmn:process>
+  <bpmn:collaboration id="Col_gestionFallasEMSA">
+    <bpmn:participant id="Pool_gestionFallasEMSA" name="Gestión de fallas técnicas EMSA" processRef="gestionFallasEMSA" />
+  </bpmn:collaboration>
+  <bpmndi:BPMNDiagram id="DI_gestionFallasEMSA">
+    <bpmndi:BPMNPlane id="Plane_gestionFallasEMSA" bpmnElement="Col_gestionFallasEMSA">
+      <bpmndi:BPMNShape id="DI_Pool_gestionFallasEMSA" bpmnElement="Pool_gestionFallasEMSA" isHorizontal="true">
+        <dc:Bounds x="60" y="80" width="1700" height="630" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_Lane_1" bpmnElement="Lane_1" isHorizontal="true">
+        <dc:Bounds x="90" y="80" width="1670" height="160" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_Lane_2" bpmnElement="Lane_2" isHorizontal="true">
+        <dc:Bounds x="90" y="240" width="1670" height="160" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_Lane_3" bpmnElement="Lane_3" isHorizontal="true">
+        <dc:Bounds x="90" y="400" width="1670" height="310" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_reporteRecibido" bpmnElement="reporteRecibido">
+        <dc:Bounds x="155" y="140" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="120" y="180" width="106" height="32" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_agendarVisita" bpmnElement="agendarVisita">
+        <dc:Bounds x="260" y="118" width="130" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_visitaTecnica" bpmnElement="visitaTecnica">
+        <dc:Bounds x="420" y="278" width="130" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_clasificarPresupuesto" bpmnElement="clasificarPresupuesto">
+        <dc:Bounds x="630" y="278" width="130" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_abrirFacturacion" bpmnElement="abrirFacturacion">
+        <dc:Bounds x="755" y="525" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_generarFacturaDePago" bpmnElement="generarFacturaDePago">
+        <dc:Bounds x="865" y="437" width="138" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_guardarFactura" bpmnElement="guardarFactura">
+        <dc:Bounds x="865" y="590" width="138" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_cerrarFacturacion" bpmnElement="cerrarFacturacion">
+        <dc:Bounds x="1060" y="525" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_entradaPago" bpmnElement="entradaPago">
+        <dc:Bounds x="1170" y="525" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_recibirPago" bpmnElement="recibirPago">
+        <dc:Bounds x="1280" y="510" width="130" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_pagoCompleto" bpmnElement="pagoCompleto">
+        <dc:Bounds x="1480" y="525" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1452" y="583" width="110" height="24" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_reporteGestionado" bpmnElement="reporteGestionado">
+        <dc:Bounds x="1620" y="532" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1570" y="576" width="136" height="32" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="DI_inicioAgenda" bpmnElement="inicioAgenda">
+        <di:waypoint x="191" y="158" />
+        <di:waypoint x="260" y="158" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DI_agendaVisita" bpmnElement="agendaVisita">
+        <di:waypoint x="390" y="158" />
+        <di:waypoint x="485" y="158" />
+        <di:waypoint x="485" y="278" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DI_visitaPresupuesto" bpmnElement="visitaPresupuesto">
+        <di:waypoint x="550" y="318" />
+        <di:waypoint x="630" y="318" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DI_presupuestoFactura" bpmnElement="presupuestoFactura">
+        <di:waypoint x="760" y="318" />
+        <di:waypoint x="780" y="318" />
+        <di:waypoint x="780" y="525" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DI_ramaFactura" bpmnElement="ramaFactura">
+        <di:waypoint x="780" y="525" />
+        <di:waypoint x="780" y="477" />
+        <di:waypoint x="865" y="477" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DI_ramaGuardar" bpmnElement="ramaGuardar">
+        <di:waypoint x="780" y="575" />
+        <di:waypoint x="780" y="630" />
+        <di:waypoint x="865" y="630" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DI_facturaGenerada" bpmnElement="facturaGenerada">
+        <di:waypoint x="1003" y="477" />
+        <di:waypoint x="1085" y="477" />
+        <di:waypoint x="1085" y="525" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DI_facturaGuardada" bpmnElement="facturaGuardada">
+        <di:waypoint x="1003" y="630" />
+        <di:waypoint x="1085" y="630" />
+        <di:waypoint x="1085" y="575" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DI_facturaPago" bpmnElement="facturaPago">
+        <di:waypoint x="1110" y="550" />
+        <di:waypoint x="1170" y="550" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DI_solicitarPago" bpmnElement="solicitarPago">
+        <di:waypoint x="1220" y="550" />
+        <di:waypoint x="1280" y="550" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DI_validarPago" bpmnElement="validarPago">
+        <di:waypoint x="1410" y="550" />
+        <di:waypoint x="1480" y="550" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DI_reintentarPago" bpmnElement="reintentarPago">
+        <di:waypoint x="1505" y="525" />
+        <di:waypoint x="1505" y="452" />
+        <di:waypoint x="1195" y="452" />
+        <di:waypoint x="1195" y="525" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1470" y="432" width="24" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DI_pagoConfirmado" bpmnElement="pagoConfirmado">
+        <di:waypoint x="1530" y="550" />
+        <di:waypoint x="1620" y="550" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1565" y="528" width="24" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

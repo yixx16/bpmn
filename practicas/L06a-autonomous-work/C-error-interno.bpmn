@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_RetoC" name="Reto C - Error interno" targetNamespace="http://universidad.edu/prestamos/bpmn" exporter="Camunda Modeler" exporterVersion="5.51.1" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.24.0">
+  <bpmn:error id="Error_AveriaEquipo" name="Avería de equipo" errorCode="AVERIA_EQUIPO" />
+  <bpmn:process id="Process_RetoC_ErrorInterno" name="Reto C - Avería detectada durante la preparación del préstamo" isExecutable="true" camunda:historyTimeToLive="180">
+    <bpmn:documentation>Fragmento del proceso "Gestión de solicitudes de préstamo de equipos universitarios". Se integra en el subproceso "Preparar préstamo", que se ejecuta tras cobrar el depósito y antes de entregar los equipos. El error lo LANZA el evento de fin de tipo error "Avería impide el préstamo" (dentro del subproceso, cuando el técnico detecta la avería). Lo CAPTURA el evento de error intermedio adjunto al borde del subproceso ("Avería capturada"), que interrumpe toda la preparación en curso y desvía el flujo hacia liberar la reserva y notificar la imposibilidad de entrega.</bpmn:documentation>
+    <bpmn:startEvent id="StartEvent_PreparacionProgramada" name="Depósito cobrado: preparar préstamo">
+      <bpmn:outgoing>Flow_Inicio_Sub</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:subProcess id="SubProcess_PrepararPrestamo" name="Preparar préstamo">
+      <bpmn:incoming>Flow_Inicio_Sub</bpmn:incoming>
+      <bpmn:outgoing>Flow_Sub_Entregar</bpmn:outgoing>
+      <bpmn:startEvent id="StartEvent_Sub" name="Inicio de la preparación">
+        <bpmn:outgoing>Flow_SubInicio_Inspeccionar</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:userTask id="Task_InspeccionarEquipos" name="Inspeccionar equipos (técnico)">
+        <bpmn:documentation>Formulario generado (Camunda 7): el técnico indica si detectó una avería que impide completar el préstamo.</bpmn:documentation>
+        <bpmn:extensionElements>
+          <camunda:formData>
+            <camunda:formField id="averiaDetectada" label="¿Avería que impide completar el préstamo?" type="boolean" defaultValue="false" />
+          </camunda:formData>
+        </bpmn:extensionElements>
+        <bpmn:incoming>Flow_SubInicio_Inspeccionar</bpmn:incoming>
+        <bpmn:outgoing>Flow_Inspeccionar_GW</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:exclusiveGateway id="Gateway_Averia" name="¿Avería que impide completar el préstamo?" default="Flow_GW_No">
+        <bpmn:incoming>Flow_Inspeccionar_GW</bpmn:incoming>
+        <bpmn:outgoing>Flow_GW_No</bpmn:outgoing>
+        <bpmn:outgoing>Flow_GW_Si</bpmn:outgoing>
+      </bpmn:exclusiveGateway>
+      <bpmn:manualTask id="Task_EmbalarEquipos" name="Embalar los equipos">
+        <bpmn:incoming>Flow_GW_No</bpmn:incoming>
+        <bpmn:outgoing>Flow_Embalar_FinSub</bpmn:outgoing>
+      </bpmn:manualTask>
+      <bpmn:endEvent id="EndEvent_PreparacionCompletada" name="Preparación completada">
+        <bpmn:incoming>Flow_Embalar_FinSub</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:endEvent id="EndEvent_ErrorAveria" name="Avería impide el préstamo">
+        <bpmn:documentation>Punto que LANZA el error: evento de fin de tipo error. Termina la rama del subproceso y propaga el error "Avería de equipo" hacia el borde del subproceso.</bpmn:documentation>
+        <bpmn:incoming>Flow_GW_Si</bpmn:incoming>
+        <bpmn:errorEventDefinition id="ErrorEventDefinition_Lanza" errorRef="Error_AveriaEquipo" />
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="Flow_SubInicio_Inspeccionar" sourceRef="StartEvent_Sub" targetRef="Task_InspeccionarEquipos" />
+      <bpmn:sequenceFlow id="Flow_Inspeccionar_GW" sourceRef="Task_InspeccionarEquipos" targetRef="Gateway_Averia" />
+      <bpmn:sequenceFlow id="Flow_GW_No" name="No" sourceRef="Gateway_Averia" targetRef="Task_EmbalarEquipos" />
+      <bpmn:sequenceFlow id="Flow_GW_Si" name="Sí" sourceRef="Gateway_Averia" targetRef="EndEvent_ErrorAveria">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${averiaDetectada == true}</bpmn:conditionExpression>
+      </bpmn:sequenceFlow>
+      <bpmn:sequenceFlow id="Flow_Embalar_FinSub" sourceRef="Task_EmbalarEquipos" targetRef="EndEvent_PreparacionCompletada" />
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="BoundaryEvent_ErrorAveria" name="Avería capturada" attachedToRef="SubProcess_PrepararPrestamo">
+      <bpmn:documentation>Punto que CAPTURA el error: evento intermedio de error en el borde del subproceso "Preparar préstamo". Es interruptivo: cancela cualquier trabajo de preparación en curso y continúa por el flujo de excepción.</bpmn:documentation>
+      <bpmn:outgoing>Flow_Boundary_Liberar</bpmn:outgoing>
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_Captura" errorRef="Error_AveriaEquipo" />
+    </bpmn:boundaryEvent>
+    <bpmn:serviceTask id="Task_LiberarReserva" name="Liberar reserva de equipos" camunda:type="external" camunda:topic="liberar-reserva-equipos">
+      <bpmn:incoming>Flow_Boundary_Liberar</bpmn:incoming>
+      <bpmn:outgoing>Flow_Liberar_Notificar</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sendTask id="Task_NotificarImposibilidad" name="Notificar imposibilidad de entrega" camunda:type="external" camunda:topic="notificar-imposibilidad-entrega">
+      <bpmn:incoming>Flow_Liberar_Notificar</bpmn:incoming>
+      <bpmn:outgoing>Flow_Notificar_Fin</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:endEvent id="EndEvent_PrestamoNoEntregado" name="Préstamo no entregado">
+      <bpmn:incoming>Flow_Notificar_Fin</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:userTask id="Task_EntregarEquipos" name="Entregar equipos al solicitante">
+      <bpmn:incoming>Flow_Sub_Entregar</bpmn:incoming>
+      <bpmn:outgoing>Flow_Entregar_Fin</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="EndEvent_EquiposEntregados" name="Equipos entregados">
+      <bpmn:incoming>Flow_Entregar_Fin</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_Inicio_Sub" sourceRef="StartEvent_PreparacionProgramada" targetRef="SubProcess_PrepararPrestamo" />
+    <bpmn:sequenceFlow id="Flow_Sub_Entregar" sourceRef="SubProcess_PrepararPrestamo" targetRef="Task_EntregarEquipos" />
+    <bpmn:sequenceFlow id="Flow_Entregar_Fin" sourceRef="Task_EntregarEquipos" targetRef="EndEvent_EquiposEntregados" />
+    <bpmn:sequenceFlow id="Flow_Boundary_Liberar" sourceRef="BoundaryEvent_ErrorAveria" targetRef="Task_LiberarReserva" />
+    <bpmn:sequenceFlow id="Flow_Liberar_Notificar" sourceRef="Task_LiberarReserva" targetRef="Task_NotificarImposibilidad" />
+    <bpmn:sequenceFlow id="Flow_Notificar_Fin" sourceRef="Task_NotificarImposibilidad" targetRef="EndEvent_PrestamoNoEntregado" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_RetoC">
+    <bpmndi:BPMNPlane id="BPMNPlane_RetoC" bpmnElement="Process_RetoC_ErrorInterno">
+      <bpmndi:BPMNShape id="StartEvent_PreparacionProgramada_di" bpmnElement="StartEvent_PreparacionProgramada">
+        <dc:Bounds x="152" y="262" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="116" y="305" width="108" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SubProcess_PrepararPrestamo_di" bpmnElement="SubProcess_PrepararPrestamo" isExpanded="true">
+        <dc:Bounds x="240" y="120" width="560" height="320" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_Sub_di" bpmnElement="StartEvent_Sub">
+        <dc:Bounds x="270" y="262" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="250" y="305" width="76" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_InspeccionarEquipos_di" bpmnElement="Task_InspeccionarEquipos">
+        <dc:Bounds x="340" y="240" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_Averia_di" bpmnElement="Gateway_Averia" isMarkerVisible="true">
+        <dc:Bounds x="485" y="255" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="455" y="195" width="110" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_EmbalarEquipos_di" bpmnElement="Task_EmbalarEquipos">
+        <dc:Bounds x="580" y="240" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_PreparacionCompletada_di" bpmnElement="EndEvent_PreparacionCompletada">
+        <dc:Bounds x="732" y="262" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="712" y="305" width="76" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_ErrorAveria_di" bpmnElement="EndEvent_ErrorAveria">
+        <dc:Bounds x="492" y="362" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="432" y="403" width="156" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_SubInicio_Inspeccionar_di" bpmnElement="Flow_SubInicio_Inspeccionar">
+        <di:waypoint x="306" y="280" />
+        <di:waypoint x="340" y="280" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Inspeccionar_GW_di" bpmnElement="Flow_Inspeccionar_GW">
+        <di:waypoint x="440" y="280" />
+        <di:waypoint x="485" y="280" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_GW_No_di" bpmnElement="Flow_GW_No">
+        <di:waypoint x="535" y="280" />
+        <di:waypoint x="580" y="280" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="548" y="262" width="20" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_GW_Si_di" bpmnElement="Flow_GW_Si">
+        <di:waypoint x="510" y="305" />
+        <di:waypoint x="510" y="362" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="516" y="325" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Embalar_FinSub_di" bpmnElement="Flow_Embalar_FinSub">
+        <di:waypoint x="680" y="280" />
+        <di:waypoint x="732" y="280" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Task_LiberarReserva_di" bpmnElement="Task_LiberarReserva">
+        <dc:Bounds x="350" y="500" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_NotificarImposibilidad_di" bpmnElement="Task_NotificarImposibilidad">
+        <dc:Bounds x="500" y="500" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_PrestamoNoEntregado_di" bpmnElement="EndEvent_PrestamoNoEntregado">
+        <dc:Bounds x="652" y="522" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="630" y="565" width="80" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_EntregarEquipos_di" bpmnElement="Task_EntregarEquipos">
+        <dc:Bounds x="860" y="240" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_EquiposEntregados_di" bpmnElement="EndEvent_EquiposEntregados">
+        <dc:Bounds x="1012" y="262" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="988" y="305" width="84" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BoundaryEvent_ErrorAveria_di" bpmnElement="BoundaryEvent_ErrorAveria">
+        <dc:Bounds x="382" y="422" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="422" y="447" width="90" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_Inicio_Sub_di" bpmnElement="Flow_Inicio_Sub">
+        <di:waypoint x="188" y="280" />
+        <di:waypoint x="240" y="280" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Sub_Entregar_di" bpmnElement="Flow_Sub_Entregar">
+        <di:waypoint x="800" y="280" />
+        <di:waypoint x="860" y="280" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Entregar_Fin_di" bpmnElement="Flow_Entregar_Fin">
+        <di:waypoint x="960" y="280" />
+        <di:waypoint x="1012" y="280" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Boundary_Liberar_di" bpmnElement="Flow_Boundary_Liberar">
+        <di:waypoint x="400" y="458" />
+        <di:waypoint x="400" y="500" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Liberar_Notificar_di" bpmnElement="Flow_Liberar_Notificar">
+        <di:waypoint x="450" y="540" />
+        <di:waypoint x="500" y="540" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Notificar_Fin_di" bpmnElement="Flow_Notificar_Fin">
+        <di:waypoint x="600" y="540" />
+        <di:waypoint x="652" y="540" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

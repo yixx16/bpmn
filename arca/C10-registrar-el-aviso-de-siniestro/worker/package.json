@@ -1,0 +1,15 @@
+{
+  "name": "arca-worker-c10",
+  "version": "1.0.0",
+  "description": "Worker de External Tasks del proceso C10 de ARCA",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "license": "UNLICENSED",
+  "private": true,
+  "dependencies": {
+    "camunda-external-task-client-js": "^3.1.0"
+  }
+}

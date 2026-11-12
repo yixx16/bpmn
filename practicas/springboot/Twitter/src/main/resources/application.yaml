@@ -1,0 +1,17 @@
+server:
+  port: 8081
+  address: 127.0.0.1
+spring:
+  datasource:
+    url: jdbc:h2:file:./data/twitter
+    username: sa
+    password: ""
+camunda:
+  bpm:
+    admin-user:
+      id: demo
+      password: demo
+      first-name: Demo
+    filter:
+      create: Todas las tareas
+    history-level: full

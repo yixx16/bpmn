@@ -1,0 +1,40 @@
+{
+  "components": [
+    {
+      "type": "text",
+      "text": "### Revisión del aviso\nCompara la reclamación con los límites y exclusiones de la póliza.",
+      "id": "Field_C10_revisar_aviso_1"
+    },
+    {
+      "type": "number",
+      "key": "montoReclamado",
+      "label": "Monto reclamado (USD)",
+      "validate": {
+        "required": true,
+        "min": 0
+      },
+      "id": "Field_C10_revisar_aviso_2"
+    },
+    {
+      "type": "checkbox",
+      "key": "exclusionDudosa",
+      "label": "La aplicación de alguna exclusión es dudosa",
+      "id": "Field_C10_revisar_aviso_3"
+    },
+    {
+      "type": "textarea",
+      "key": "observacionesRevision",
+      "label": "Observaciones de la revisión",
+      "id": "Field_C10_revisar_aviso_4"
+    }
+  ],
+  "type": "default",
+  "id": "C10-revisar-aviso",
+  "executionPlatform": "Camunda Platform",
+  "executionPlatformVersion": "7.24.0",
+  "exporter": {
+    "name": "Claude Code",
+    "version": "1.0"
+  },
+  "schemaVersion": 4
+}

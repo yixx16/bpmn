@@ -1,0 +1,11 @@
+{
+  "name": "sendletterworker",
+  "version": "1.0.0",
+  "main": "sendLetterWorker.js",
+  "type": "module",
+  "author": "Camunda Services GmbH",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "camunda-external-task-client-js": "^3.0.1"
+  }
+}

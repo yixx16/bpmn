@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_RetoB" name="Reto B - Actividad multiinstancia" targetNamespace="http://universidad.edu/prestamos/bpmn" exporter="Camunda Modeler" exporterVersion="5.51.1" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.24.0">
+  <bpmn:process id="Process_RetoB_Inspeccion" name="Reto B - Inspección multiinstancia de los equipos solicitados" isExecutable="true" camunda:historyTimeToLive="180">
+    <bpmn:documentation>Fragmento del proceso "Gestión de solicitudes de préstamo de equipos universitarios". Se integra dentro del subproceso "Preparar préstamo", inmediatamente después de recuperar los equipos reservados y antes de embalarlos. La colección que determina el número de instancias es "equiposSolicitados" (la lista de equipos incluidos en la solicitud aprobada): se crea una instancia de "Inspeccionar equipo" por cada equipo, todas en paralelo. Al no declararse una condición de finalización anticipada, la actividad termina únicamente cuando todas las instancias han concluido, y solo entonces la preparación continúa.</bpmn:documentation>
+    <bpmn:startEvent id="StartEvent_ReservaConfirmada" name="Reserva confirmada: inicia la preparación">
+      <bpmn:outgoing>Flow_Inicio_Recuperar</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:manualTask id="Task_RecuperarEquipos" name="Recuperar equipos del almacén">
+      <bpmn:incoming>Flow_Inicio_Recuperar</bpmn:incoming>
+      <bpmn:outgoing>Flow_Recuperar_Inspeccionar</bpmn:outgoing>
+    </bpmn:manualTask>
+    <bpmn:userTask id="Task_InspeccionarEquipo" name="Inspeccionar equipo">
+      <bpmn:documentation>Actividad multiinstancia paralela ejecutada por el técnico. Una instancia por cada elemento de la colección "equiposSolicitados" (camunda:collection); cada instancia recibe el elemento actual en la variable "equipo" (camunda:elementVariable). En Camunda 7 la variable de proceso "equiposSolicitados" debe existir como lista al iniciar la instancia.</bpmn:documentation>
+      <bpmn:incoming>Flow_Recuperar_Inspeccionar</bpmn:incoming>
+      <bpmn:outgoing>Flow_Inspeccionar_Embalar</bpmn:outgoing>
+      <bpmn:property id="Property_EquiposSolicitados" name="__targetRef_placeholder" />
+      <bpmn:dataInputAssociation id="DataInputAssociation_Equipos">
+        <bpmn:sourceRef>DataObjectReference_EquiposSolicitados</bpmn:sourceRef>
+        <bpmn:targetRef>Property_EquiposSolicitados</bpmn:targetRef>
+      </bpmn:dataInputAssociation>
+      <bpmn:multiInstanceLoopCharacteristics camunda:collection="equiposSolicitados" camunda:elementVariable="equipo" />
+    </bpmn:userTask>
+    <bpmn:manualTask id="Task_EmbalarEquipos" name="Embalar equipos para la entrega">
+      <bpmn:incoming>Flow_Inspeccionar_Embalar</bpmn:incoming>
+      <bpmn:outgoing>Flow_Embalar_Fin</bpmn:outgoing>
+    </bpmn:manualTask>
+    <bpmn:endEvent id="EndEvent_EquiposListos" name="Equipos listos para entrega">
+      <bpmn:incoming>Flow_Embalar_Fin</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:dataObject id="DataObject_EquiposSolicitados" name="equiposSolicitados" isCollection="true" />
+    <bpmn:dataObjectReference id="DataObjectReference_EquiposSolicitados" name="Equipos solicitados (colección)" dataObjectRef="DataObject_EquiposSolicitados" />
+    <bpmn:sequenceFlow id="Flow_Inicio_Recuperar" sourceRef="StartEvent_ReservaConfirmada" targetRef="Task_RecuperarEquipos" />
+    <bpmn:sequenceFlow id="Flow_Recuperar_Inspeccionar" sourceRef="Task_RecuperarEquipos" targetRef="Task_InspeccionarEquipo" />
+    <bpmn:sequenceFlow id="Flow_Inspeccionar_Embalar" name="Todas las inspecciones terminadas" sourceRef="Task_InspeccionarEquipo" targetRef="Task_EmbalarEquipos" />
+    <bpmn:sequenceFlow id="Flow_Embalar_Fin" sourceRef="Task_EmbalarEquipos" targetRef="EndEvent_EquiposListos" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_RetoB">
+    <bpmndi:BPMNPlane id="BPMNPlane_RetoB" bpmnElement="Process_RetoB_Inspeccion">
+      <bpmndi:BPMNShape id="StartEvent_ReservaConfirmada_di" bpmnElement="StartEvent_ReservaConfirmada">
+        <dc:Bounds x="152" y="232" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="115" y="275" width="110" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_RecuperarEquipos_di" bpmnElement="Task_RecuperarEquipos">
+        <dc:Bounds x="240" y="210" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_InspeccionarEquipo_di" bpmnElement="Task_InspeccionarEquipo">
+        <dc:Bounds x="400" y="210" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_EmbalarEquipos_di" bpmnElement="Task_EmbalarEquipos">
+        <dc:Bounds x="600" y="210" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_EquiposListos_di" bpmnElement="EndEvent_EquiposListos">
+        <dc:Bounds x="752" y="232" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="726" y="275" width="88" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DataObjectReference_EquiposSolicitados_di" bpmnElement="DataObjectReference_EquiposSolicitados">
+        <dc:Bounds x="432" y="70" width="36" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="480" y="82" width="130" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="DataInputAssociation_Equipos_di" bpmnElement="DataInputAssociation_Equipos">
+        <di:waypoint x="450" y="120" />
+        <di:waypoint x="450" y="210" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Inicio_Recuperar_di" bpmnElement="Flow_Inicio_Recuperar">
+        <di:waypoint x="188" y="250" />
+        <di:waypoint x="240" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Recuperar_Inspeccionar_di" bpmnElement="Flow_Recuperar_Inspeccionar">
+        <di:waypoint x="340" y="250" />
+        <di:waypoint x="400" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Inspeccionar_Embalar_di" bpmnElement="Flow_Inspeccionar_Embalar">
+        <di:waypoint x="500" y="250" />
+        <di:waypoint x="600" y="250" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="505" y="205" width="90" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Embalar_Fin_di" bpmnElement="Flow_Embalar_Fin">
+        <di:waypoint x="700" y="250" />
+        <di:waypoint x="752" y="250" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

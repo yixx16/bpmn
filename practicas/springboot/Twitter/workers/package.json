@@ -1,0 +1,12 @@
+{
+  "name": "twitter-sendletter-worker",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node SendLetterWorker.js"
+  },
+  "dependencies": {
+    "camunda-external-task-client-js": "3.1.0"
+  }
+}

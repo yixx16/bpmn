@@ -1,0 +1,35 @@
+{
+  "components": [
+    {
+      "type": "textfield",
+      "key": "motivoValidacion",
+      "label": "Resultado de la validación anterior",
+      "disabled": true,
+      "id": "Field_G3_calibrar_version_1"
+    },
+    {
+      "type": "textfield",
+      "key": "versionPropuesta",
+      "label": "Versión propuesta",
+      "validate": {
+        "required": true
+      },
+      "id": "Field_G3_calibrar_version_2"
+    },
+    {
+      "type": "textarea",
+      "key": "notasCalibracion",
+      "label": "Notas de calibración",
+      "id": "Field_G3_calibrar_version_3"
+    }
+  ],
+  "type": "default",
+  "id": "G3-calibrar-version",
+  "executionPlatform": "Camunda Platform",
+  "executionPlatformVersion": "7.24.0",
+  "exporter": {
+    "name": "Claude Code",
+    "version": "1.0"
+  },
+  "schemaVersion": 4
+}
