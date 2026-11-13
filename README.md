@@ -35,10 +35,10 @@ Cada carpeta de proceso de ARCA es autocontenida:
 | Camunda Forms | 3: revisar aviso, concepto jurídico, preverificación | 3: revisar caso, analizar caso, resolver caso | 4: consolidar, calibrar, documentar, aprobar |
 | DMN | `C10_RequiereConceptoJuridico` | `C3_RutaSuscripcion` (tiers) | `G3_CriteriosValidacion` |
 | XOR | 5 compuertas exclusivas | 5 compuertas exclusivas | 5 compuertas exclusivas |
-| Call Activity | Comunicar a la firma (2 veces) | Notificar la decisión al canal | Someter la versión al carrier |
+| Call Activity | Comunicar a la firma (2 veces) | Calcular el Pre-Score (invoca C1) y Notificar la decisión al canal | Someter la versión al carrier |
 | Evento de mensaje | Inicio por aviso de reclamación | Inicio por cuestionario y tarea de recepción | Inicio, captura de la respuesta del carrier y fin "Versión publicada" |
 | Compuerta de eventos o temporizador | Temporizador no interruptor de 24 h | Temporizador interruptor de 24 h | Compuerta basada en eventos: respuesta o 15 días |
-| External Task (JavaScript) | 7 topics en `worker/index.js` | 8 topics en `worker/index.js` | 5 topics en `worker/index.js` |
+| External Task (JavaScript) | 7 topics en `worker/index.js` | 10 topics en `worker/index.js` | 5 topics en `worker/index.js` |
 
 ## Cómo ejecutarlo
 
@@ -63,6 +63,8 @@ Cada carpeta de proceso de ARCA es autocontenida:
 
    Despliega las tres carpetas, arranca los workers y recorre todos los caminos, incluidos los temporizadores, que dispara por la API.
 
+5. **Demo en la web.** [`arca/docs/guia-demo.md`](arca/docs/guia-demo.md) explica paso a paso cómo presentar cada proceso en Cockpit y Tasklist, y [`arca/docs/guia-presentacion-c3.md`](arca/docs/guia-presentacion-c3.md) es la guía completa para presentar C3. El script `arca/pruebas/demo.mjs` hace lo que la web no puede: envía los mensajes externos de la firma y del carrier y adelanta los temporizadores.
+
 ### Variables para recorrer los caminos
 
 Los workers simulan los sistemas de ARCA. Estas variables, enviadas al iniciar el proceso, controlan sus resultados:
@@ -70,7 +72,6 @@ Los workers simulan los sistemas de ARCA. Estas variables, enviadas al iniciar e
 | Proceso | Variable | Efecto |
 |---|---|---|
 | C10 | `polizaVigente` o `fechaHecho`, `inicioVigencia`, `finVigencia` | Define si la póliza estaba vigente a la fecha del hecho |
-| C3 | `habilitarDecisionComercial` | `true` recorre la parte de diseño; sin ella el proceso termina como hoy, sin decisión comercial |
 | C3 | `puntajeCapa1` y, al responder, `puntajeCapa2` | Puntaje compuesto = 30 % Capa 1 + 70 % Capa 2 |
 | C3 | `reclamoPagado`, `incidenteIA`, `sinEOVigente`, `restriccionCapa1` | Fuerzan la revisión humana |
 | G3 | `simularFalloValidacion` | El primer intento de validación detecta sesgo y vuelve a calibración |

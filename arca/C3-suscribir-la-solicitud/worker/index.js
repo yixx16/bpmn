@@ -1,5 +1,6 @@
 // Worker de C3 Suscribir la solicitud.
-// Atiende las External Tasks de C3 y de su proceso invocado C3.1 Notificar la decisión al canal.
+// Atiende las External Tasks de C3 y de sus procesos invocados:
+// C1 Calcular el Pre-Score y C3.1 Notificar la decisión al canal.
 // La lógica es una simulación del Score Engine; los pesos y factores son de demo, como en la plataforma.
 import { Client, Variables, logger } from "camunda-external-task-client-js";
 
@@ -22,31 +23,49 @@ function manejar(topic, logica) {
   });
 }
 
-// Entre 8 y 12 preguntas según lo que encontró la Capa 1.
-manejar("c3-seleccionar-preguntas", (entrada, salida) => {
+// ---------- Proceso invocado C1 Calcular el Pre-Score (Call Activity, Capa 1)
+// En la plataforma, un agente de OpenAI lee la web y Apify consulta el colegio de abogados y Avvo.
+// Aquí se simulan esas llamadas externas.
+manejar("c1-escanear-web", (entrada, salida) => {
+  const dominio = entrada.get("dominio") ?? "firma-demo.com";
+  console.log(`[C1] Web de ${dominio} escaneada: firma identificada`);
+  salida.set("firmaIdentificada", dominio.split(".")[0]);
+});
+
+manejar("c1-buscar-abogados", (entrada, salida) => {
+  const abogados = entrada.get("abogados") ?? 5;
+  console.log(`[C1] Apify: ${abogados} abogados encontrados en el colegio y en Avvo`);
+  salida.set("abogados", abogados);
+});
+
+// Pre-Score de 0 a 100 con las cuatro categorías de señales.
+manejar("c1-calcular-prescore", (entrada, salida) => {
+  const preScore = entrada.get("puntajeCapa1") ?? 60;
+  const restriccion = entrada.get("restriccionCapa1") === true;
+  console.log(`[C1] Pre-Score ${preScore}${restriccion ? " con restricción (antecedente disciplinario)" : ""}`);
+  salida.set("puntajeCapa1", preScore);
+  salida.set("restriccionCapa1", restriccion);
+  salida.set("senalesCapa1", "AI Governance, Professional Standing, Reputation, Firm Maturity");
+});
+
+// ---------- C3
+// Arma el cuestionario de Capa 2: entre 8 y 12 preguntas según lo que encontró la Capa 1.
+manejar("c3-presentar-cuestionario", (entrada, salida) => {
   const hallazgos = ["restriccionCapa1", "reclamoPagado", "incidenteIA", "sinEOVigente"].filter((k) => entrada.get(k) === true).length;
   const preguntas = Math.min(12, 8 + hallazgos);
-  console.log(`[C3] Cuestionario de Capa 2 con ${preguntas} preguntas`);
+  console.log(`[C3] Cuestionario de ${preguntas} preguntas presentado a ${entrada.get("dominio") ?? "la firma"}`);
   salida.set("numeroPreguntas", preguntas);
 });
 
-manejar("c3-presentar-cuestionario", (entrada) => {
-  console.log(`[C3] Cuestionario presentado a ${entrada.get("dominio") ?? "la firma"}`);
-});
-
 // Puntaje compuesto: 30 % Capa 1 y 70 % Capa 2 (pesos de demo).
-// Hoy todo resultado sale con la decisión comercial bloqueada; habilitarDecisionComercial = true
-// permite recorrer la parte de diseño.
 manejar("c3-calcular-score", (entrada, salida) => {
   const capa1 = entrada.get("puntajeCapa1") ?? 60;
   const capa2 = entrada.get("puntajeCapa2") ?? 60;
   const puntaje = Math.round(0.3 * capa1 + 0.7 * capa2);
   const revisionForzada = ["reclamoPagado", "incidenteIA", "sinEOVigente", "restriccionCapa1"].some((k) => entrada.get(k) === true);
-  const bloqueada = entrada.get("habilitarDecisionComercial") !== true;
-  console.log(`[C3] Puntaje ${puntaje} (Capa 1 ${capa1}, Capa 2 ${capa2}); revisión forzada: ${revisionForzada}; decisión bloqueada: ${bloqueada}`);
+  console.log(`[C3] Puntaje ${puntaje} (Capa 1 ${capa1}, Capa 2 ${capa2}); revisión forzada: ${revisionForzada}`);
   salida.set("puntaje", puntaje);
   salida.set("revisionForzada", revisionForzada);
-  salida.set("commercialDecisionBlocked", bloqueada);
 });
 
 manejar("c3-mostrar-resultados", (entrada) => {

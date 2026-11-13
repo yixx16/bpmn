@@ -133,20 +133,18 @@ async function hastaPuntaje(inicio, capa2) {
   return pi;
 }
 async function probarC3() {
-  console.log("\n== C3 · estado actual: decisión comercial bloqueada");
-  let pi = await hastaPuntaje({ puntajeCapa1: n(80) }, 80);
-  ok(await terminada(pi) && await paso(pi, "EndEvent_C3_SinDecision"), "terminó en Resultados entregados sin decisión comercial");
-
-  const habilitado = { habilitarDecisionComercial: b(true) };
   console.log("\n== C3 · FORTRESS: emisión automática");
-  pi = await hastaPuntaje({ ...habilitado, puntajeCapa1: n(90) }, 90);
+  let pi = await hastaPuntaje({ puntajeCapa1: n(90) }, 90);
   ok(await terminada(pi) && await paso(pi, "EndEvent_C3_DecisionNotificada"), "terminó en Decisión notificada al canal");
+  const preScore = await subprocesos(pi, "Process_C1_CalcularPreScore");
+  ok(preScore.length === 1 && preScore[0].state === "COMPLETED", "la Call Activity ejecutó C1 Calcular el Pre-Score");
+  ok((await variable(pi, "numeroPreguntas")) >= 8, "el cuestionario se armó con las señales de la Capa 1");
   ok((await variable(pi, "tier")) === "FORTRESS" && (await variable(pi, "decision")) === "ACCEPT", "la tabla DMN asignó FORTRESS y ACCEPT");
   ok((await variable(pi, "primaAnual")) === 1785, "prima anual = 420 × 5 × 0,85 = 1785");
   ok((await subprocesos(pi, "Process_C3_NotificarCanal")).length === 1, "la Call Activity ejecutó C3.1 Notificar la decisión al canal");
 
   console.log("\n== C3 · GUARDED: revisión humana que rechaza");
-  pi = await hastaPuntaje({ ...habilitado, puntajeCapa1: n(50) }, 50);
+  pi = await hastaPuntaje({ puntajeCapa1: n(50) }, 50);
   let t = await tarea(pi, "Task_C3_RevisarCaso");
   ok(t?.formKey === "camunda-forms:deployment:C3-revisar-caso.form", "aparece Revisar el caso con su Camunda Form");
   ok(t?.due && Math.abs(new Date(t.due) - Date.now() - 48 * 3600e3) < 3600e3, "vence en 48 h");
@@ -154,7 +152,7 @@ async function probarC3() {
   ok(await terminada(pi) && await paso(pi, "Task_C3_PlanMejora"), "pasó por el plan de mejora y terminó");
 
   console.log("\n== C3 · EXPOSED: revisión senior que acepta");
-  pi = await hastaPuntaje({ ...habilitado, puntajeCapa1: n(30) }, 30);
+  pi = await hastaPuntaje({ puntajeCapa1: n(30) }, 30);
   await completar(await tarea(pi, "Task_C3_AnalizarCaso"), { recomendacionActuario: s("Aceptar con exclusión de litigios complejos") });
   t = await tarea(pi, "Task_C3_ResolverCaso");
   ok(t?.due && Math.abs(new Date(t.due) - Date.now() - 5 * 86400e3) < 3600e3, "la revisión senior vence en 5 días");
@@ -162,14 +160,14 @@ async function probarC3() {
   ok(await terminada(pi) && (await variable(pi, "primaAnual")) === 2730, "terminó con cotización EXPOSED (prima 2730)");
 
   console.log("\n== C3 · revisión forzada por reclamo pagado");
-  pi = await hastaPuntaje({ ...habilitado, puntajeCapa1: n(90), reclamoPagado: b(true) }, 90);
+  pi = await hastaPuntaje({ puntajeCapa1: n(90), reclamoPagado: b(true) }, 90);
   t = await tarea(pi, "Task_C3_RevisarCaso");
   ok(!!t, "con puntaje FORTRESS igual pasa a revisión humana");
   await completar(t, { decision: s("ACCEPT"), justificacionDecision: s("Reclamo menor ya cerrado") });
   ok(await terminada(pi), "la instancia terminó");
 
   console.log("\n== C3 · CRITICAL: se declina automáticamente");
-  pi = await hastaPuntaje({ ...habilitado, puntajeCapa1: n(10) }, 10);
+  pi = await hastaPuntaje({ puntajeCapa1: n(10) }, 10);
   ok(await terminada(pi) && (await variable(pi, "decision")) === "DECLINE" && (await variable(pi, "fechaReevaluacion")), "DECLINE con plan de mejora y reevaluación");
 
   console.log("\n== C3 · temporizador de sesión (24 h)");
