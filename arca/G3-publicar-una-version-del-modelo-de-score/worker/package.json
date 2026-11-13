@@ -1,15 +1,8 @@
 {
-  "name": "arca-worker-g3",
+  "name": "arca-g3-workers",
   "version": "1.0.0",
-  "description": "Worker de External Tasks del proceso G3 de ARCA",
-  "main": "index.js",
-  "type": "module",
-  "scripts": {
-    "start": "node index.js"
-  },
-  "license": "UNLICENSED",
-  "private": true,
-  "dependencies": {
-    "camunda-external-task-client-js": "^3.1.0"
-  }
+  "description": "External task workers (JavaScript) para G3 y S2 de ARCA",
+  "main": "worker.js",
+  "scripts": { "start": "node worker.js" },
+  "dependencies": { "camunda-external-task-client-js": "^3.1.0" }
 }

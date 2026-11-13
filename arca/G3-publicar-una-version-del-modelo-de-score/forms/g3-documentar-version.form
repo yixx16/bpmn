@@ -1,0 +1,36 @@
+{
+  "components": [
+    {
+      "label": "Referencia de la memoria de cálculo",
+      "type": "textfield",
+      "id": "Field_c1",
+      "layout": {
+        "row": "Row_c1",
+        "columns": null
+      },
+      "key": "referenciaMemoria",
+      "validate": {
+        "required": true
+      },
+      "description": "Enlace o código del documento"
+    },
+    {
+      "label": "Nota de cambios",
+      "type": "textarea",
+      "id": "Field_c2",
+      "layout": {
+        "row": "Row_c2",
+        "columns": null
+      },
+      "key": "notaCambios",
+      "validate": {
+        "required": true
+      }
+    }
+  ],
+  "type": "default",
+  "id": "g3-documentar-version",
+  "executionPlatform": "Camunda Platform",
+  "executionPlatformVersion": "7.24.0",
+  "schemaVersion": 16
+}

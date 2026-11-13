@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:camunda="http://camunda.org/schema/1.0/dmn" id="Definitions_G3_Validacion" name="G3 Validación de la versión del modelo" namespace="http://camunda.org/schema/1.0/dmn" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.24.0">
+  <decision id="g3-validacion-version" name="Validación de la versión del modelo" camunda:historyTimeToLive="180">
+    <description>Decide si una versión candidata del modelo de score supera la validación. UMBRALES DE EJEMPLO (supuestos del equipo, a confirmar con el Actuario Jefe y el carrier). Nota: Gini = 2·AUC − 1, por eso se valida el AUC y no se duplica con una regla de Gini.</description>
+    <decisionTable id="DecisionTable_G3_Validacion" hitPolicy="FIRST">
+      <input id="Input_AUC" label="AUC (poder predictivo)" camunda:inputVariable="auc">
+        <inputExpression id="InputExpression_AUC" typeRef="double">
+          <text>auc</text>
+        </inputExpression>
+      </input>
+      <input id="Input_LossRatio" label="Desviación del loss ratio (backtesting)" camunda:inputVariable="desviacionLossRatio">
+        <inputExpression id="InputExpression_LossRatio" typeRef="double">
+          <text>desviacionLossRatio</text>
+        </inputExpression>
+      </input>
+      <input id="Input_Sesgo" label="Razón de impacto dispar (sesgo)" camunda:inputVariable="impactoDisparejo">
+        <inputExpression id="InputExpression_Sesgo" typeRef="double">
+          <text>impactoDisparejo</text>
+        </inputExpression>
+      </input>
+      <output id="Output_Superada" label="Validación superada" name="validacionSuperada" typeRef="boolean" />
+      <rule id="Rule_Supera">
+        <description>Cumple los tres criterios</description>
+        <inputEntry id="Rule_Supera_in1">
+          <text>&gt;= 0.70</text>
+        </inputEntry>
+        <inputEntry id="Rule_Supera_in2">
+          <text>[-0.10..0.10]</text>
+        </inputEntry>
+        <inputEntry id="Rule_Supera_in3">
+          <text>&gt;= 0.80</text>
+        </inputEntry>
+        <outputEntry id="Rule_Supera_out">
+          <text>true</text>
+        </outputEntry>
+      </rule>
+      <rule id="Rule_NoSupera">
+        <description>Incumple al menos un criterio</description>
+        <inputEntry id="Rule_NoSupera_in1">
+          <text></text>
+        </inputEntry>
+        <inputEntry id="Rule_NoSupera_in2">
+          <text></text>
+        </inputEntry>
+        <inputEntry id="Rule_NoSupera_in3">
+          <text></text>
+        </inputEntry>
+        <outputEntry id="Rule_NoSupera_out">
+          <text>false</text>
+        </outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram id="DMNDiagram_G3_Validacion">
+      <dmndi:DMNShape id="DMNShape_G3_Validacion" dmnElementRef="g3-validacion-version">
+        <dc:Bounds height="80" width="180" x="160" y="100" />
+      </dmndi:DMNShape>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</definitions>

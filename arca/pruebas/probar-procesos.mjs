@@ -4,6 +4,7 @@
 // Despliega cada carpeta de proceso (BPMN, DMN y formularios), arranca su worker y recorre sus caminos.
 // Los temporizadores se disparan ejecutando su job por la API, sin esperar el plazo real.
 import { spawn } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -75,8 +76,11 @@ async function desplegar(carpeta) {
 }
 
 const salidas = {};
-function arrancarWorker(carpeta) {
-  const w = spawn(process.execPath, ["index.js"], { cwd: path.join(ARCA, carpeta, "worker") });
+function arrancarWorker(carpeta, env = {}) {
+  const dir = path.join(ARCA, carpeta, "worker");
+  const principal = JSON.parse(readFileSync(path.join(dir, "package.json"), "utf8")).main ?? "index.js";
+  // El worker de G3 responde solo como carrier; en la prueba lo hace a los 500 ms para no esperar.
+  const w = spawn(process.execPath, [principal], { cwd: dir, env: { ...process.env, CAMUNDA_URL: API, CARRIER_DELAY_MS: "500", ...env } });
   salidas[carpeta] = "";
   w.stdout.on("data", (d) => (salidas[carpeta] += d));
   w.stderr.on("data", (d) => (salidas[carpeta] += d));
@@ -178,48 +182,78 @@ async function probarC3() {
 }
 
 // ---------------------------------------------------------------- G3
-async function hastaComite(pi, version, decisionComite) {
-  await completar(await tarea(pi, "Task_G3_Consolidar"), { motivoCambio: s("SINIESTRALIDAD"), propuestaCambio: s("Recalibrar pesos de AI Governance") });
-  await completar(await tarea(pi, "Task_G3_Calibrar"), { versionPropuesta: s(version) });
+const G3 = "G3-publicar-una-version-del-modelo-de-score";
+async function iniciarG3(extra = {}) {
+  return iniciar("NecesidadNuevaVersion", { motivo: s("Deriva detectada"), ...extra });
 }
-async function aprobarComite(pi, decision) {
-  await completar(await tarea(pi, "Task_G3_Documentar"), { notaCambios: s("Sube el peso de AI Governance") });
+async function consolidarYCalibrar(pi, version) {
+  await completar(await tarea(pi, "Task_G3_Consolidar"), {
+    fuenteEvidencia: s("DERIVA"), resumenEvidencia: s("El loss ratio se desvió 12 %"), cambioPropuesto: s("Subir el peso de verificación de fuentes"),
+  });
+  await completar(await tarea(pi, "Task_G3_Calibrar"), {
+    versionCandidata: s(version), datosCalibracion: s("Siniestros 2025-2026"), cambiosSenalesPesos: s("Verificación de fuentes de 10 a 15"),
+  });
+}
+async function documentarYDecidir(pi, decision) {
+  await completar(await tarea(pi, "Task_G3_Documentar"), { referenciaMemoria: s("MC-2026-11"), notaCambios: s("Recalibración por deriva") });
   await completar(await tarea(pi, "Task_G3_AprobarComite"), { decisionComite: s(decision) });
 }
+let workerG3;
+// Reinicia el worker de G3 con otra respuesta del carrier. Libera las tareas que el worker anterior
+// alcanzó a bloquear antes de cerrarse, para no esperar los 30 s de su bloqueo.
+async function reiniciarWorkerG3(respuestaCarrier) {
+  workerG3?.kill();
+  await pausa(500);
+  for (const t of (await api("/external-task?locked=true")).body ?? []) await post(`/external-task/${t.id}/unlock`);
+  workerG3 = arrancarWorker(G3, { CARRIER_RESPUESTA: respuestaCarrier });
+  await pausa(2500);
+}
 async function probarG3() {
-  console.log("\n== G3 · publicación completa");
-  let pi = await iniciar("NecesidadNuevaVersion", {});
-  await hastaComite(pi, "v2.1");
-  ok(!!(await tarea(pi, "Task_G3_Documentar")) && (await variable(pi, "motivoValidacion")) === "Cumple los criterios", "la tabla DMN aprobó la validación");
-  await aprobarComite(pi, "APROBADA");
-  ok((await subprocesos(pi, "Process_G3_SometerCarrier")).length === 1, "la Call Activity ejecutó G3.1 Someter la versión al carrier");
-  ok((await correlacionar(pi, "RespuestaCarrier", { aprobadaCarrier: b(true) })).status === 200, "la compuerta de eventos recibió la respuesta del carrier");
-  ok(await terminada(pi) && await paso(pi, "EndEvent_G3_Publicada"), "terminó en Versión publicada (evento de mensaje)");
-  ok((await variable(pi, "versionDesplegada")) === "v2.1", "versión v2.1 desplegada");
+  console.log("\n== G3 · camino feliz");
+  let pi = await iniciarG3();
+  await consolidarYCalibrar(pi, "score-v1.3");
+  ok(!!(await tarea(pi, "Task_G3_Documentar")) && (await variable(pi, "validacionSuperada")) === true, "la tabla DMN aprobó la validación");
+  await documentarYDecidir(pi, "APROBADA");
+  ok(await terminada(pi) && await paso(pi, "EndEvent_G3_Publicada"), "el carrier aprobó y terminó en Versión publicada (evento de mensaje)");
+  ok(await paso(pi, "Event_G3_RespuestaCarrier"), "la compuerta de eventos recibió la respuesta del carrier");
+  const s2 = await subprocesos(pi, "Process_S2_DesplegarCambios");
+  ok(s2.length === 1 && s2[0].state === "COMPLETED", "la Call Activity ejecutó S2 Desplegar cambios en plataforma");
+  ok((await variable(pi, "versionVigente")) === "score-v1.3", "versión score-v1.3 registrada como vigente");
 
-  console.log("\n== G3 · sesgo, recalibración, ajustes del comité y rechazo");
-  pi = await iniciar("NecesidadNuevaVersion", { simularFalloValidacion: b(true) });
-  await hastaComite(pi, "v2.2");
+  console.log("\n== G3 · la validación falla y vuelve a calibración");
+  pi = await iniciarG3({ simularValidacion: s("falla") });
+  await consolidarYCalibrar(pi, "score-v1.4");
   let t = await tarea(pi, "Task_G3_Calibrar");
-  ok(!!t && (await variable(pi, "motivoValidacion")) === "Sesgo detectado", "la tabla DMN rechazó por sesgo y volvió a calibración");
-  await completar(t, { versionPropuesta: s("v2.2b") });
-  await aprobarComite(pi, "AJUSTES");
+  ok(!!t, "la tabla DMN rechazó la validación y volvió a calibración");
+  await completar(t, { versionCandidata: s("score-v1.4b"), datosCalibracion: s("x"), cambiosSenalesPesos: s("x") });
+  ok(!!(await tarea(pi, "Task_G3_Documentar")), "la segunda validación pasó");
+
+  console.log("\n== G3 · el comité pide ajustes y luego rechaza");
+  await documentarYDecidir(pi, "AJUSTES");
   ok(!!(await tarea(pi, "Task_G3_Consolidar")), "el comité pidió ajustes y volvió a consolidar");
-  await hastaComite(pi, "v2.2c");
-  await aprobarComite(pi, "RECHAZADA");
+  await consolidarYCalibrar(pi, "score-v1.5");
+  await documentarYDecidir(pi, "RECHAZADA");
   ok(await terminada(pi) && await paso(pi, "EndEvent_G3_Rechazada"), "terminó en Propuesta rechazada");
 
+  console.log("\n== G3 · el despliegue falla y S2 revierte");
+  pi = await iniciarG3({ simularDespliegue: s("falla") });
+  await consolidarYCalibrar(pi, "score-v1.6");
+  await documentarYDecidir(pi, "APROBADA");
+  ok(await terminada(pi) && await paso(pi, "EndEvent_G3_Revertida"), "terminó en Despliegue revertido");
+  ok((await subprocesos(pi, "Process_S2_DesplegarCambios"))[0]?.state === "COMPLETED" && await paso((await subprocesos(pi, "Process_S2_DesplegarCambios"))[0].id, "EndEvent_S2_Revertido"), "S2 terminó en Despliegue revertido");
+
   console.log("\n== G3 · el carrier rechaza");
-  pi = await iniciar("NecesidadNuevaVersion", {});
-  await hastaComite(pi, "v2.3");
-  await aprobarComite(pi, "APROBADA");
-  await correlacionar(pi, "RespuestaCarrier", { aprobadaCarrier: b(false) });
+  await reiniciarWorkerG3("rechaza");
+  pi = await iniciarG3();
+  await consolidarYCalibrar(pi, "score-v1.7");
+  await documentarYDecidir(pi, "APROBADA");
   ok(await terminada(pi) && await paso(pi, "EndEvent_G3_NoAprobada"), "terminó en Versión no aprobada por el carrier");
 
   console.log("\n== G3 · el carrier no responde en 15 días");
-  pi = await iniciar("NecesidadNuevaVersion", {});
-  await hastaComite(pi, "v2.4");
-  await aprobarComite(pi, "APROBADA");
+  await reiniciarWorkerG3("silencio");
+  pi = await iniciarG3();
+  await consolidarYCalibrar(pi, "score-v1.8");
+  await documentarYDecidir(pi, "APROBADA");
   await suscripcion(pi, "RespuestaCarrier");
   ok((await dispararTemporizador(pi)).status === 204, "se disparó el plazo de 15 días");
   ok(await terminada(pi) && await paso(pi, "EndEvent_G3_SinRespuesta"), "terminó en Sin respuesta del carrier");
@@ -233,7 +267,10 @@ if (version.status !== 200) {
 }
 console.log(`Camunda ${version.body.version} en ${API}`);
 for (const p of PROCESOS) if (!(await desplegar(p))) process.exit(1);
-const workers = PROCESOS.map(arrancarWorker);
+const workers = PROCESOS.filter((p) => p !== G3).map((p) => arrancarWorker(p));
+workerG3 = arrancarWorker(G3, { CARRIER_RESPUESTA: "aprueba" });
+// Si la prueba termina por un error, los workers no deben quedar vivos.
+process.on("exit", () => { workers.forEach((w) => w.kill()); workerG3?.kill(); });
 await pausa(3000);
 try {
   await probarC10();
@@ -241,6 +278,7 @@ try {
   await probarG3();
 } finally {
   workers.forEach((w) => w.kill());
+  workerG3?.kill();
 }
 const incidentes = (await api("/incident")).body.length;
 ok(incidentes === 0, `sin incidentes abiertos en el motor (${incidentes})`);

@@ -7,7 +7,7 @@
 //   node pruebas/demo.mjs workers                    Arranca los tres workers en esta terminal (Ctrl+C para detener)
 //   node pruebas/demo.mjs iniciar <c10|c3|g3> [esc]  Inicia una instancia con un escenario preparado
 //   node pruebas/demo.mjs responder [puntaje]        C3: la firma envía sus respuestas del cuestionario
-//   node pruebas/demo.mjs carrier <aprobar|rechazar> G3: el carrier responde
+//   node pruebas/demo.mjs carrier <aprobar|rechazar> G3: el carrier responde (si su worker corre con CARRIER_RESPUESTA=silencio)
 //   node pruebas/demo.mjs vencer <c10|c3|g3>         Dispara ahora el temporizador pendiente del proceso
 //   node pruebas/demo.mjs estado                     Muestra dónde está cada instancia y las tareas abiertas
 //   node pruebas/demo.mjs historial                  Muestra en qué evento final terminaron las últimas instancias
@@ -51,8 +51,15 @@ const ESCENARIOS = {
     },
   },
   g3: {
-    normal: { texto: "La validación pasa a la primera", vars: {} },
-    sesgo: { texto: "La primera validación detecta sesgo y vuelve a calibración", vars: { simularFalloValidacion: b(true) } },
+    normal: { texto: "Camino feliz: la versión se publica", vars: { motivo: s("Deriva detectada") } },
+    "validacion-falla": {
+      texto: "La primera validación falla y vuelve a calibración",
+      vars: { motivo: s("Deriva detectada"), simularValidacion: s("falla") },
+    },
+    "despliegue-falla": {
+      texto: "Las pruebas de humo de S2 fallan y el despliegue se revierte",
+      vars: { motivo: s("Deriva detectada"), simularDespliegue: s("falla") },
+    },
   },
 };
 
@@ -92,11 +99,12 @@ async function desplegar() {
   console.log(`\nAbre Cockpit para verlos: ${WEB}/cockpit/default/#/processes`);
 }
 
-function workers() {
+async function workers() {
   for (const [k, { carpeta }] of Object.entries(PROCESOS)) {
     const dir = path.join(ARCA, carpeta, "worker");
     if (!existsSync(path.join(dir, "node_modules"))) salir(`Falta "npm install" en ${dir}`);
-    const w = spawn(process.execPath, ["index.js"], { cwd: dir });
+    const principal = JSON.parse(await readFile(path.join(dir, "package.json"), "utf8")).main ?? "index.js";
+    const w = spawn(process.execPath, [principal], { cwd: dir });
     const prefijo = `[${k.toUpperCase()}-worker] `;
     const imprimir = (d) => String(d).split(/\r?\n/)
       .filter((l) => l.trim() && !/polled 0 tasks/.test(l))
