@@ -1,0 +1,208 @@
+=====================================================================
+PRUEBAS CON CURL - G3 Publicar una version del modelo de score (ARCA)
+=====================================================================
+Los resultados "ESPERADO" salen del diseno del proceso. No se ejecutaron
+en un motor Camunda real: verificalos hoy antes de presentar.
+
+Requisitos: Camunda Platform 7.24 corriendo, workers corriendo (node worker.js),
+curl y jq. En Windows usa Git Bash (el cmd y PowerShell rompen las comillas del JSON).
+Las tareas se completan por REST, asi que NO necesitas grupos ni Tasklist para probar.
+
+---------------------------------------------------------------------
+0. PREPARACION (pega esto una vez en la terminal)
+---------------------------------------------------------------------
+BASE=http://localhost:8080/engine-rest
+
+# Variables de las tareas de usuario
+V_CONS='{"fuenteEvidencia":{"value":"DERIVA","type":"String"},"resumenEvidencia":{"value":"El loss ratio se desvio 12% en el ultimo trimestre","type":"String"},"cambioPropuesto":{"value":"Subir el peso de verificacion de fuentes","type":"String"}}'
+V_CAL='{"versionCandidata":{"value":"score-v1.3","type":"String"},"datosCalibracion":{"value":"Siniestros 2025-2026","type":"String"},"cambiosSenalesPesos":{"value":"Peso de verificacion de fuentes de 10 a 15","type":"String"}}'
+V_DOC='{"referenciaMemoria":{"value":"MC-2026-11","type":"String"},"notaCambios":{"value":"Recalibracion por deriva","type":"String"}}'
+V_APRUEBA='{"decisionComite":{"value":"APROBADA","type":"String"}}'
+V_AJUSTES='{"decisionComite":{"value":"AJUSTES","type":"String"}}'
+V_RECHAZA='{"decisionComite":{"value":"RECHAZADA","type":"String"}}'
+
+# Funciones de ayuda
+iniciar() { # $1=businessKey  $2=variables extra en JSON (opcional, ej: ,"simularValidacion":{"value":"falla","type":"String"})
+  curl -s -X POST $BASE/message -H "Content-Type: application/json" \
+   -d "{\"messageName\":\"NecesidadNuevaVersion\",\"businessKey\":\"$1\",\"processVariables\":{\"motivo\":{\"value\":\"Deriva detectada\",\"type\":\"String\"}$2}}"
+  PI=$(curl -s "$BASE/process-instance?processDefinitionKey=Process_G3_PublicarVersionModelo&businessKey=$1" | jq -r '.[0].id')
+  echo "Instancia: $PI"
+}
+completar() { # $1=instancia  $2=variables JSON
+  TASK=$(curl -s "$BASE/task?processInstanceId=$1" | jq -r '.[0].id')
+  curl -s -X POST "$BASE/task/$TASK/complete" -H "Content-Type: application/json" -d "{\"variables\":$2}"
+}
+tareas() { curl -s "$BASE/task?processInstanceId=$1" | jq -r '.[].name'; }
+estado() { curl -s "$BASE/history/process-instance/$1" | jq '{state, endActivityId}'; }
+ruta()   { curl -s "$BASE/history/activity-instance?processInstanceId=$1&sortBy=startTime&sortOrder=asc" | jq -r '.[] | (.activityName // .activityId)'; }
+
+---------------------------------------------------------------------
+1. VERIFICAR QUE TODO ESTA DESPLEGADO
+---------------------------------------------------------------------
+curl -s "$BASE/process-definition?key=Process_G3_PublicarVersionModelo" | jq '.[].key'
+curl -s "$BASE/process-definition?key=Process_S2_DesplegarCambios" | jq '.[].key'
+curl -s "$BASE/decision-definition?key=g3-validacion-version" | jq '.[].key'
+ESPERADO: las tres devuelven su key. Si alguna devuelve [], falta ese archivo en el despliegue.
+
+---------------------------------------------------------------------
+2. DMN DIRECTA (sin proceso)
+---------------------------------------------------------------------
+# 2a. Cumple los tres criterios
+curl -s -X POST $BASE/decision-definition/key/g3-validacion-version/evaluate -H "Content-Type: application/json" \
+ -d '{"variables":{"auc":{"value":0.78,"type":"Double"},"desviacionLossRatio":{"value":0.04,"type":"Double"},"impactoDisparejo":{"value":0.91,"type":"Double"}}}' | jq '.[0].validacionSuperada.value'
+ESPERADO: true
+
+# 2b. AUC bajo (0.64)
+curl -s -X POST $BASE/decision-definition/key/g3-validacion-version/evaluate -H "Content-Type: application/json" \
+ -d '{"variables":{"auc":{"value":0.64,"type":"Double"},"desviacionLossRatio":{"value":0.04,"type":"Double"},"impactoDisparejo":{"value":0.91,"type":"Double"}}}' | jq '.[0].validacionSuperada.value'
+ESPERADO: false
+
+# 2c. Desviacion del loss ratio alta (18%)
+curl -s -X POST $BASE/decision-definition/key/g3-validacion-version/evaluate -H "Content-Type: application/json" \
+ -d '{"variables":{"auc":{"value":0.78,"type":"Double"},"desviacionLossRatio":{"value":0.18,"type":"Double"},"impactoDisparejo":{"value":0.91,"type":"Double"}}}' | jq '.[0].validacionSuperada.value'
+ESPERADO: false
+
+# 2d. Sesgo: impacto dispar bajo (0.72)
+curl -s -X POST $BASE/decision-definition/key/g3-validacion-version/evaluate -H "Content-Type: application/json" \
+ -d '{"variables":{"auc":{"value":0.78,"type":"Double"},"desviacionLossRatio":{"value":0.04,"type":"Double"},"impactoDisparejo":{"value":0.72,"type":"Double"}}}' | jq '.[0].validacionSuperada.value'
+ESPERADO: false
+
+# 2e. Valores limite (AUC exacto 0.70, loss ratio -0.10, impacto 0.80)
+curl -s -X POST $BASE/decision-definition/key/g3-validacion-version/evaluate -H "Content-Type: application/json" \
+ -d '{"variables":{"auc":{"value":0.70,"type":"Double"},"desviacionLossRatio":{"value":-0.10,"type":"Double"},"impactoDisparejo":{"value":0.80,"type":"Double"}}}' | jq '.[0].validacionSuperada.value'
+ESPERADO: true (los limites estan incluidos)
+
+---------------------------------------------------------------------
+3. CAMINO FELIZ  (workers con: node worker.js)
+---------------------------------------------------------------------
+iniciar G3-001
+completar $PI "$V_CONS"
+completar $PI "$V_CAL"
+sleep 3
+tareas $PI          # ESPERADO: Documentar memoria de calculo y nota de cambios
+completar $PI "$V_DOC"
+completar $PI "$V_APRUEBA"
+sleep 15            # el worker espera 8 s y responde como carrier
+estado $PI
+ruta $PI
+ESPERADO: state COMPLETED, endActivityId EndEvent_G3_Publicada.
+La ruta incluye: Someter la version..., Respuesta del carrier, Desplegar la version aprobada (S2),
+Registrar la vigencia... y Version publicada.
+
+# Ver la instancia hija de la Call Activity (S2)
+curl -s "$BASE/history/process-instance?superProcessInstanceId=$PI" | jq '.[] | {processDefinitionKey, state, endActivityId}'
+ESPERADO: Process_S2_DesplegarCambios, COMPLETED, EndEvent_S2_Completado
+
+# Ver variables finales
+curl -s "$BASE/history/variable-instance?processInstanceId=$PI" | jq -r '.[] | "\(.name) = \(.value)"'
+ESPERADO: validacionSuperada = true, aprobadaCarrier = true, despliegueSaludable = true, versionVigente = score-v1.3
+
+---------------------------------------------------------------------
+4. LA VALIDACION FALLA (ciclo de recalibracion)
+---------------------------------------------------------------------
+iniciar G3-002 ',"simularValidacion":{"value":"falla","type":"String"}'
+completar $PI "$V_CONS"
+completar $PI "$V_CAL"
+sleep 3
+tareas $PI
+ESPERADO: vuelve a aparecer "Preparar los datos y calibrar la rubrica y los pesos" (NO aparece Documentar).
+curl -s "$BASE/history/variable-instance?processInstanceId=$PI&variableName=validacionSuperada" | jq '.[0].value'
+ESPERADO: false
+
+# Segunda vuelta: el worker simula ahora una validacion correcta
+completar $PI "$V_CAL"
+sleep 3
+tareas $PI
+ESPERADO: Documentar memoria de calculo y nota de cambios
+
+---------------------------------------------------------------------
+5. EL COMITE PIDE AJUSTES
+---------------------------------------------------------------------
+iniciar G3-003
+completar $PI "$V_CONS"; completar $PI "$V_CAL"; sleep 3; completar $PI "$V_DOC"
+completar $PI "$V_AJUSTES"
+sleep 2
+tareas $PI
+ESPERADO: vuelve "Consolidar la evidencia y proponer el cambio"
+
+---------------------------------------------------------------------
+6. EL COMITE RECHAZA
+---------------------------------------------------------------------
+iniciar G3-004
+completar $PI "$V_CONS"; completar $PI "$V_CAL"; sleep 3; completar $PI "$V_DOC"
+completar $PI "$V_RECHAZA"
+sleep 2
+estado $PI
+ESPERADO: COMPLETED, endActivityId EndEvent_G3_Rechazada
+
+---------------------------------------------------------------------
+7. EL CARRIER RECHAZA
+---------------------------------------------------------------------
+# Detener el worker y reiniciarlo asi:
+#   Linux/Mac/Git Bash:  CARRIER_RESPUESTA=rechaza node worker.js
+iniciar G3-005
+completar $PI "$V_CONS"; completar $PI "$V_CAL"; sleep 3; completar $PI "$V_DOC"; completar $PI "$V_APRUEBA"
+sleep 15
+estado $PI
+ESPERADO: COMPLETED, endActivityId EndEvent_G3_NoAprobada
+
+---------------------------------------------------------------------
+8. EL CARRIER NO RESPONDE (event-based gateway + timer de 15 dias)
+---------------------------------------------------------------------
+# Reiniciar el worker con:  CARRIER_RESPUESTA=silencio node worker.js
+iniciar G3-006
+completar $PI "$V_CONS"; completar $PI "$V_CAL"; sleep 3; completar $PI "$V_DOC"; completar $PI "$V_APRUEBA"
+sleep 5
+estado $PI
+ESPERADO: ACTIVE (esta esperando al carrier)
+
+# Ver el timer pendiente
+curl -s "$BASE/job?processInstanceId=$PI&timers=true" | jq '.[] | {id, dueDate}'
+ESPERADO: un job con fecha 15 dias en el futuro
+
+# 8a. Forzar que se cumpla el plazo (sin esperar 15 dias)
+JOB=$(curl -s "$BASE/job?processInstanceId=$PI&timers=true" | jq -r '.[0].id')
+curl -s -X POST "$BASE/job/$JOB/execute"
+sleep 2
+estado $PI
+ESPERADO: COMPLETED, endActivityId EndEvent_G3_SinRespuesta
+
+# 8b. ALTERNATIVA: el carrier responde manualmente (usar con otra instancia en silencio)
+curl -s -X POST $BASE/message -H "Content-Type: application/json" \
+ -d "{\"messageName\":\"RespuestaCarrier\",\"processInstanceId\":\"$PI\",\"processVariables\":{\"aprobadaCarrier\":{\"value\":true,\"type\":\"Boolean\"}}}"
+ESPERADO: el proceso continua hacia Desplegar (S2) y termina publicado.
+
+---------------------------------------------------------------------
+9. EL DESPLIEGUE FALLA (S2 revierte)
+---------------------------------------------------------------------
+# Reiniciar el worker normal:  node worker.js
+iniciar G3-007 ',"simularDespliegue":{"value":"falla","type":"String"}'
+completar $PI "$V_CONS"; completar $PI "$V_CAL"; sleep 3; completar $PI "$V_DOC"; completar $PI "$V_APRUEBA"
+sleep 15
+estado $PI
+ESPERADO: COMPLETED, endActivityId EndEvent_G3_Revertida
+curl -s "$BASE/history/process-instance?superProcessInstanceId=$PI" | jq '.[] | {state, endActivityId}'
+ESPERADO: S2 termina en EndEvent_S2_Revertido
+
+---------------------------------------------------------------------
+10. TABLA RESUMEN
+---------------------------------------------------------------------
+Prueba                   Como provocarla                         Fin esperado
+Camino feliz             defaults                                EndEvent_G3_Publicada
+Validacion falla         simularValidacion=falla                 vuelve a Calibrar, luego sigue
+Comite ajustes           decisionComite=AJUSTES                  vuelve a Consolidar
+Comite rechaza           decisionComite=RECHAZADA                EndEvent_G3_Rechazada
+Carrier rechaza          CARRIER_RESPUESTA=rechaza               EndEvent_G3_NoAprobada
+Carrier silencio         CARRIER_RESPUESTA=silencio + job        EndEvent_G3_SinRespuesta
+Despliegue falla         simularDespliegue=falla                 EndEvent_G3_Revertida
+
+---------------------------------------------------------------------
+11. SI ALGO FALLA
+---------------------------------------------------------------------
+- iniciar no crea instancia (PI = null): falta desplegar G3, o el nombre del mensaje no coincide.
+- Una tarea de usuario da error de formulario: los .form no viajaron en el mismo despliegue que el BPMN.
+- El proceso se queda en una tarea automatica: el worker no esta corriendo.
+  Revisa: curl -s $BASE/external-task | jq '.[] | {topicName, workerId}'
+- Error al invocar S2: S2.bpmn no esta desplegado (la Call Activity usa la ultima version).
+- Si tu Camunda exige usuario y clave en REST, agrega a cada curl:  -u demo:demo
+- Para borrar una instancia de prueba:  curl -s -X DELETE "$BASE/process-instance/$PI"
