@@ -1,0 +1,57 @@
+Pruebas de C10 Registrar el aviso de siniestro
+Antes: motor encendido y workers corriendo (node pruebas/demo.mjs workers).
+Cada prueba tiene dos variantes. Usa la de PowerShell en PowerShell y la de curl.exe en cmd.
+
+
+Prueba 1: póliza no vigente. Termina sola, sin tareas humanas.
+
+PowerShell:
+Invoke-RestMethod -Method Post -Uri "http://localhost:8080/engine-rest/message" -ContentType "application/json" -Body '{"messageName":"AvisoReclamacion","businessKey":"DEMO-1","processVariables":{"firma":{"value":"Firma Alfa","type":"String"},"fechaHecho":{"value":"2026-01-15","type":"String"},"inicioVigencia":{"value":"2026-03-01","type":"String"},"finVigencia":{"value":"2027-03-01","type":"String"}}}'
+
+cmd:
+curl -s -X POST http://localhost:8080/engine-rest/message -H "Content-Type: application/json" -d "{\"messageName\":\"AvisoReclamacion\",\"businessKey\":\"DEMO-1\",\"processVariables\":{\"firma\":{\"value\":\"Firma Alfa\",\"type\":\"String\"},\"fechaHecho\":{\"value\":\"2026-01-15\",\"type\":\"String\"},\"inicioVigencia\":{\"value\":\"2026-03-01\",\"type\":\"String\"},\"finVigencia\":{\"value\":\"2027-03-01\",\"type\":\"String\"}}}"
+
+
+Prueba 2: cubierto, sin abogado. En el formulario de revisión: monto 50000 y sin exclusión dudosa.
+
+PowerShell:
+Invoke-RestMethod -Method Post -Uri "http://localhost:8080/engine-rest/message" -ContentType "application/json" -Body '{"messageName":"AvisoReclamacion","businessKey":"DEMO-2","processVariables":{"firma":{"value":"Firma Beta","type":"String"},"polizaVigente":{"value":true,"type":"Boolean"},"montoReclamado":{"value":50000,"type":"Double"}}}'
+
+cmd:
+curl -s -X POST http://localhost:8080/engine-rest/message -H "Content-Type: application/json" -d "{\"messageName\":\"AvisoReclamacion\",\"businessKey\":\"DEMO-2\",\"processVariables\":{\"firma\":{\"value\":\"Firma Beta\",\"type\":\"String\"},\"polizaVigente\":{\"value\":true,\"type\":\"Boolean\"},\"montoReclamado\":{\"value\":50000,\"type\":\"Double\"}}}"
+
+
+Prueba 3: monto alto, con abogado. Monto 300000; el abogado recomienda "con reserva".
+
+PowerShell:
+Invoke-RestMethod -Method Post -Uri "http://localhost:8080/engine-rest/message" -ContentType "application/json" -Body '{"messageName":"AvisoReclamacion","businessKey":"DEMO-3","processVariables":{"firma":{"value":"Firma Gamma","type":"String"},"polizaVigente":{"value":true,"type":"Boolean"},"montoReclamado":{"value":300000,"type":"Double"}}}'
+
+cmd:
+curl -s -X POST http://localhost:8080/engine-rest/message -H "Content-Type: application/json" -d "{\"messageName\":\"AvisoReclamacion\",\"businessKey\":\"DEMO-3\",\"processVariables\":{\"firma\":{\"value\":\"Firma Gamma\",\"type\":\"String\"},\"polizaVigente\":{\"value\":true,\"type\":\"Boolean\"},\"montoReclamado\":{\"value\":300000,\"type\":\"Double\"}}}"
+
+
+Prueba 4: exclusión dudosa, sin cobertura. Monto 20000 y marca la exclusión dudosa.
+
+PowerShell:
+Invoke-RestMethod -Method Post -Uri "http://localhost:8080/engine-rest/message" -ContentType "application/json" -Body '{"messageName":"AvisoReclamacion","businessKey":"DEMO-4","processVariables":{"firma":{"value":"Firma Delta","type":"String"},"polizaVigente":{"value":true,"type":"Boolean"},"montoReclamado":{"value":20000,"type":"Double"}}}'
+
+cmd:
+curl -s -X POST http://localhost:8080/engine-rest/message -H "Content-Type: application/json" -d "{\"messageName\":\"AvisoReclamacion\",\"businessKey\":\"DEMO-4\",\"processVariables\":{\"firma\":{\"value\":\"Firma Delta\",\"type\":\"String\"},\"polizaVigente\":{\"value\":true,\"type\":\"Boolean\"},\"montoReclamado\":{\"value\":20000,\"type\":\"Double\"}}}"
+
+
+Prueba 5: temporizador de 24 h. Completa la revisión y deja la preverificación abierta.
+
+PowerShell:
+Invoke-RestMethod -Method Post -Uri "http://localhost:8080/engine-rest/message" -ContentType "application/json" -Body '{"messageName":"AvisoReclamacion","businessKey":"DEMO-5","processVariables":{"firma":{"value":"Firma Epsilon","type":"String"},"polizaVigente":{"value":true,"type":"Boolean"},"montoReclamado":{"value":50000,"type":"Double"}}}'
+
+cmd:
+curl -s -X POST http://localhost:8080/engine-rest/message -H "Content-Type: application/json" -d "{\"messageName\":\"AvisoReclamacion\",\"businessKey\":\"DEMO-5\",\"processVariables\":{\"firma\":{\"value\":\"Firma Epsilon\",\"type\":\"String\"},\"polizaVigente\":{\"value\":true,\"type\":\"Boolean\"},\"montoReclamado\":{\"value\":50000,\"type\":\"Double\"}}}"
+
+Para disparar el temporizador sin esperar 24 h, con la preverificación abierta:
+
+PowerShell:
+$job = (Invoke-RestMethod -Uri "http://localhost:8080/engine-rest/job?processDefinitionKey=Process_C10_RegistrarAvisoSiniestro&timers=true")[0]
+Invoke-RestMethod -Method Post -Uri "http://localhost:8080/engine-rest/job/$($job.id)/execute"
+
+cmd (desde la carpeta arca):
+node pruebas/demo.mjs vencer c10
