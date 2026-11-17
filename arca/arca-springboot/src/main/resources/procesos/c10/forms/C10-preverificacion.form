@@ -1,0 +1,52 @@
+{
+  "components": [
+    {
+      "type": "textfield",
+      "key": "coberturaRecomendada",
+      "label": "Cobertura recomendada por el Asesor Jurídico",
+      "disabled": true,
+      "id": "Field_C10_preverificacion_1"
+    },
+    {
+      "type": "radio",
+      "key": "resultadoPreverificacion",
+      "label": "Resultado de la preverificación",
+      "validate": {
+        "required": true
+      },
+      "values": [
+        {
+          "label": "Cobertura preverificada",
+          "value": "CUBIERTO"
+        },
+        {
+          "label": "Cobertura con reserva de derechos",
+          "value": "RESERVA"
+        },
+        {
+          "label": "Sin cobertura",
+          "value": "SIN_COBERTURA"
+        }
+      ],
+      "id": "Field_C10_preverificacion_2"
+    },
+    {
+      "type": "textarea",
+      "key": "fundamentoPreverificacion",
+      "label": "Fundamento que se comunicará a la firma",
+      "validate": {
+        "required": true
+      },
+      "id": "Field_C10_preverificacion_3"
+    }
+  ],
+  "type": "default",
+  "id": "C10-preverificacion",
+  "executionPlatform": "Camunda Platform",
+  "executionPlatformVersion": "7.24.0",
+  "exporter": {
+    "name": "Claude Code",
+    "version": "1.0"
+  },
+  "schemaVersion": 4
+}

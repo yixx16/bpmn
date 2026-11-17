@@ -1,0 +1,77 @@
+{
+  "components": [
+    {
+      "label": "Motivo de la solicitud (llega con el mensaje de inicio)",
+      "type": "textfield",
+      "id": "Field_c1",
+      "layout": {
+        "row": "Row_c1",
+        "columns": null
+      },
+      "key": "motivo",
+      "readonly": true
+    },
+    {
+      "label": "Fuente principal de la evidencia",
+      "type": "select",
+      "id": "Field_c2",
+      "layout": {
+        "row": "Row_c2",
+        "columns": null
+      },
+      "key": "fuenteEvidencia",
+      "validate": {
+        "required": true
+      },
+      "values": [
+        {
+          "label": "Siniestralidad (C11 / G1)",
+          "value": "SINIESTRALIDAD"
+        },
+        {
+          "label": "Deriva detectada",
+          "value": "DERIVA"
+        },
+        {
+          "label": "Nueva vertical o jurisdicción",
+          "value": "VERTICAL_JURISDICCION"
+        },
+        {
+          "label": "Fallo o norma relevante (S5)",
+          "value": "FALLO_NORMA"
+        }
+      ]
+    },
+    {
+      "label": "Resumen de la evidencia",
+      "type": "textarea",
+      "id": "Field_c3",
+      "layout": {
+        "row": "Row_c3",
+        "columns": null
+      },
+      "key": "resumenEvidencia",
+      "validate": {
+        "required": true
+      }
+    },
+    {
+      "label": "Cambio propuesto a la rúbrica y los pesos",
+      "type": "textarea",
+      "id": "Field_c4",
+      "layout": {
+        "row": "Row_c4",
+        "columns": null
+      },
+      "key": "cambioPropuesto",
+      "validate": {
+        "required": true
+      }
+    }
+  ],
+  "type": "default",
+  "id": "g3-consolidar-evidencia",
+  "executionPlatform": "Camunda Platform",
+  "executionPlatformVersion": "7.24.0",
+  "schemaVersion": 16
+}

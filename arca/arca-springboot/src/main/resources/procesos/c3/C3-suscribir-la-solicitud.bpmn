@@ -1,0 +1,437 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_C3" targetNamespace="http://arca.ai/procesos/bpmn" exporter="Camunda Modeler" exporterVersion="5.51.1" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.24.0">
+  <bpmn:message id="Message_C3_CuestionarioIniciado" name="CuestionarioIniciado" />
+  <bpmn:message id="Message_C3_RespuestasRecibidas" name="RespuestasCuestionarioRecibidas" />
+  <bpmn:collaboration id="Collaboration_C3">
+    <bpmn:participant id="Participant_C3_ARCA" name="ARCA" processRef="Process_C3_SuscribirSolicitud" />
+    <bpmn:participant id="Participant_C3_Canal" name="Firma de abogados y broker" />
+    <bpmn:messageFlow id="MessageFlow_C3_Inicio" name="Inicio" sourceRef="Participant_C3_Canal" targetRef="StartEvent_C3_CuestionarioIniciado" />
+    <bpmn:messageFlow id="MessageFlow_C3_Cuestionario" name="Cuestionario" sourceRef="Task_C3_PresentarCuestionario" targetRef="Participant_C3_Canal" />
+    <bpmn:messageFlow id="MessageFlow_C3_Respuestas" name="Respuestas" sourceRef="Participant_C3_Canal" targetRef="Task_C3_RecibirRespuestas" />
+    <bpmn:messageFlow id="MessageFlow_C3_Resultados" name="Resultados y plan de acción" sourceRef="Task_C3_MostrarResultados" targetRef="Participant_C3_Canal" />
+    <bpmn:messageFlow id="MessageFlow_C3_Decision" name="Decisión y condiciones" sourceRef="Task_C3_NotificarDecision" targetRef="Participant_C3_Canal" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_C3_SuscribirSolicitud" name="C3 Suscribir la solicitud" isExecutable="true" camunda:historyTimeToLive="180">
+    <bpmn:documentation>Proceso core del grupo Adquisición (CV1 Demanda-a-Renovación). Dueño: Director de Suscripción. Disparador: la firma inicia el cuestionario de Capa 2 después de ver su Pre-Score (C1). La plataforma calcula el puntaje compuesto y la tabla DMN asigna el tier y la ruta: FORTRESS 80-100 y FORTIFIED 65-79 sin revisión (FORTIFIED con condiciones); GUARDED 45-64 revisión humana con cotización en 48 h; EXPOSED 25-44 revisión senior con cotización en 5 días; CRITICAL 0-24 se declina con plan de mejora y nueva evaluación a los 90 días. Un reclamo pagado, un incidente de IA, no tener E&amp;O vigente o una restricción de Capa 1 fuerzan la revisión humana. Salida: decisión con prima y límites hacia C4 Emitir la póliza.</bpmn:documentation>
+    <bpmn:laneSet id="LaneSet_C3">
+      <bpmn:lane id="Lane_C3_Plataforma" name="Plataforma ARCA (Score Engine)">
+        <bpmn:flowNodeRef>StartEvent_C3_CuestionarioIniciado</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_C3_CalcularPreScore</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_C3_PresentarCuestionario</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_C3_RecibirRespuestas</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_C3_EvaluacionAbandonada</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_C3_CalcularPuntaje</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_C3_MostrarResultados</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_C3_DeterminarRuta</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_C3_Ruta</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_C3_MergeRevision</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_C3_Decision</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_C3_CalcularCotizacion</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_C3_PlanMejora</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_C3_MergeFinal</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_C3_RegistrarDecision</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_C3_NotificarDecision</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_C3_DecisionNotificada</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Boundary_C3_SesionVencida</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_C3_Suscriptor" name="Suscriptor (Evaluador)">
+        <bpmn:flowNodeRef>Task_C3_RevisarCaso</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_C3_Actuario" name="Actuario">
+        <bpmn:flowNodeRef>Task_C3_AnalizarCaso</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_C3_Director" name="Director de Suscripción">
+        <bpmn:flowNodeRef>Task_C3_ResolverCaso</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="StartEvent_C3_CuestionarioIniciado" name="Firma inicia el cuestionario">
+      <bpmn:outgoing>Flow_C3_01</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_StartEvent_C3_CuestionarioIniciado" messageRef="Message_C3_CuestionarioIniciado" />
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_C3_01" sourceRef="StartEvent_C3_CuestionarioIniciado" targetRef="Task_C3_CalcularPreScore" />
+    <bpmn:sequenceFlow id="Flow_C3_02" sourceRef="Task_C3_CalcularPreScore" targetRef="Task_C3_PresentarCuestionario" />
+    <bpmn:sequenceFlow id="Flow_C3_03" sourceRef="Task_C3_PresentarCuestionario" targetRef="Task_C3_RecibirRespuestas" />
+    <bpmn:sequenceFlow id="Flow_C3_04" sourceRef="Task_C3_RecibirRespuestas" targetRef="Task_C3_CalcularPuntaje" />
+    <bpmn:sequenceFlow id="Flow_C3_05" sourceRef="Boundary_C3_SesionVencida" targetRef="EndEvent_C3_EvaluacionAbandonada" />
+    <bpmn:sequenceFlow id="Flow_C3_06" sourceRef="Task_C3_CalcularPuntaje" targetRef="Task_C3_MostrarResultados" />
+    <bpmn:sequenceFlow id="Flow_C3_07" sourceRef="Task_C3_MostrarResultados" targetRef="Task_C3_DeterminarRuta" />
+    <bpmn:sequenceFlow id="Flow_C3_08" sourceRef="Task_C3_DeterminarRuta" targetRef="Gateway_C3_Ruta" />
+    <bpmn:sequenceFlow id="Flow_C3_Guarded" name="GUARDED o revisión forzada (48 h)" sourceRef="Gateway_C3_Ruta" targetRef="Task_C3_RevisarCaso">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${ruta == 'HUMANA'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_C3_Exposed" name="EXPOSED (5 días)" sourceRef="Gateway_C3_Ruta" targetRef="Task_C3_AnalizarCaso">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${ruta == 'SENIOR'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_C3_SinRevision" name="Sin revisión: FORTRESS, FORTIFIED, CRITICAL" sourceRef="Gateway_C3_Ruta" targetRef="Gateway_C3_MergeRevision" />
+    <bpmn:sequenceFlow id="Flow_C3_09" sourceRef="Task_C3_RevisarCaso" targetRef="Gateway_C3_MergeRevision" />
+    <bpmn:sequenceFlow id="Flow_C3_10" sourceRef="Task_C3_AnalizarCaso" targetRef="Task_C3_ResolverCaso" />
+    <bpmn:sequenceFlow id="Flow_C3_11" sourceRef="Task_C3_ResolverCaso" targetRef="Gateway_C3_MergeRevision" />
+    <bpmn:sequenceFlow id="Flow_C3_12" sourceRef="Gateway_C3_MergeRevision" targetRef="Gateway_C3_Decision" />
+    <bpmn:sequenceFlow id="Flow_C3_Accept" name="ACCEPT" sourceRef="Gateway_C3_Decision" targetRef="Task_C3_CalcularCotizacion">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${decision == 'ACCEPT'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_C3_Decline" name="DECLINE" sourceRef="Gateway_C3_Decision" targetRef="Task_C3_PlanMejora" />
+    <bpmn:sequenceFlow id="Flow_C3_13" sourceRef="Task_C3_CalcularCotizacion" targetRef="Gateway_C3_MergeFinal" />
+    <bpmn:sequenceFlow id="Flow_C3_14" sourceRef="Task_C3_PlanMejora" targetRef="Gateway_C3_MergeFinal" />
+    <bpmn:sequenceFlow id="Flow_C3_15" sourceRef="Gateway_C3_MergeFinal" targetRef="Task_C3_RegistrarDecision" />
+    <bpmn:sequenceFlow id="Flow_C3_16" sourceRef="Task_C3_RegistrarDecision" targetRef="Task_C3_NotificarDecision" />
+    <bpmn:sequenceFlow id="Flow_C3_17" sourceRef="Task_C3_NotificarDecision" targetRef="EndEvent_C3_DecisionNotificada" />
+    <bpmn:callActivity id="Task_C3_CalcularPreScore" name="Calcular el Pre-Score (Capa 1)" calledElement="Process_C1_CalcularPreScore" camunda:calledElementBinding="latest">
+      <bpmn:extensionElements>
+        <camunda:in businessKey="#{execution.processBusinessKey}" />
+        <camunda:in variables="all" />
+        <camunda:out variables="all" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_C3_01</bpmn:incoming>
+      <bpmn:outgoing>Flow_C3_02</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:sendTask id="Task_C3_PresentarCuestionario" name="Armar y presentar el cuestionario a la firma" camunda:delegateExpression="${c3PresentarCuestionario}">
+      <bpmn:incoming>Flow_C3_02</bpmn:incoming>
+      <bpmn:outgoing>Flow_C3_03</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:receiveTask id="Task_C3_RecibirRespuestas" name="Recibir respuestas y declaración de veracidad" messageRef="Message_C3_RespuestasRecibidas">
+      <bpmn:incoming>Flow_C3_03</bpmn:incoming>
+      <bpmn:outgoing>Flow_C3_04</bpmn:outgoing>
+    </bpmn:receiveTask>
+    <bpmn:endEvent id="EndEvent_C3_EvaluacionAbandonada" name="Evaluación abandonada">
+      <bpmn:incoming>Flow_C3_05</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:serviceTask id="Task_C3_CalcularPuntaje" name="Calcular el puntaje compuesto y el tier" camunda:delegateExpression="${c3CalcularScore}">
+      <bpmn:incoming>Flow_C3_04</bpmn:incoming>
+      <bpmn:outgoing>Flow_C3_06</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sendTask id="Task_C3_MostrarResultados" name="Mostrar resultados y plan de acción" camunda:delegateExpression="${c3MostrarResultados}">
+      <bpmn:incoming>Flow_C3_06</bpmn:incoming>
+      <bpmn:outgoing>Flow_C3_07</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:businessRuleTask id="Task_C3_DeterminarRuta" name="Determinar la ruta de suscripción" camunda:resultVariable="rutaSuscripcion" camunda:decisionRef="C3_RutaSuscripcion" camunda:mapDecisionResult="singleResult">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:outputParameter name="tier">${rutaSuscripcion.tier}</camunda:outputParameter>
+          <camunda:outputParameter name="ruta">${rutaSuscripcion.ruta}</camunda:outputParameter>
+          <camunda:outputParameter name="decision">${rutaSuscripcion.decision}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_C3_07</bpmn:incoming>
+      <bpmn:outgoing>Flow_C3_08</bpmn:outgoing>
+    </bpmn:businessRuleTask>
+    <bpmn:exclusiveGateway id="Gateway_C3_Ruta" name="¿Ruta?" default="Flow_C3_SinRevision">
+      <bpmn:incoming>Flow_C3_08</bpmn:incoming>
+      <bpmn:outgoing>Flow_C3_Guarded</bpmn:outgoing>
+      <bpmn:outgoing>Flow_C3_Exposed</bpmn:outgoing>
+      <bpmn:outgoing>Flow_C3_SinRevision</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="Task_C3_RevisarCaso" name="Revisar el caso y decidir" camunda:formRef="C3-revisar-caso" camunda:formRefBinding="deployment" camunda:candidateGroups="suscriptores" camunda:dueDate="PT48H">
+      <bpmn:incoming>Flow_C3_Guarded</bpmn:incoming>
+      <bpmn:outgoing>Flow_C3_09</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_C3_AnalizarCaso" name="Analizar el caso y recomendar condiciones" camunda:formRef="C3-analizar-caso" camunda:formRefBinding="deployment" camunda:candidateGroups="actuarios">
+      <bpmn:incoming>Flow_C3_Exposed</bpmn:incoming>
+      <bpmn:outgoing>Flow_C3_10</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_C3_ResolverCaso" name="Resolver el caso (revisión senior)" camunda:formRef="C3-resolver-caso" camunda:formRefBinding="deployment" camunda:candidateGroups="direccion-suscripcion" camunda:dueDate="P5D">
+      <bpmn:incoming>Flow_C3_10</bpmn:incoming>
+      <bpmn:outgoing>Flow_C3_11</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gateway_C3_MergeRevision">
+      <bpmn:incoming>Flow_C3_SinRevision</bpmn:incoming>
+      <bpmn:incoming>Flow_C3_09</bpmn:incoming>
+      <bpmn:incoming>Flow_C3_11</bpmn:incoming>
+      <bpmn:outgoing>Flow_C3_12</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:exclusiveGateway id="Gateway_C3_Decision" name="¿Decisión final?" default="Flow_C3_Decline">
+      <bpmn:incoming>Flow_C3_12</bpmn:incoming>
+      <bpmn:outgoing>Flow_C3_Accept</bpmn:outgoing>
+      <bpmn:outgoing>Flow_C3_Decline</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Task_C3_CalcularCotizacion" name="Calcular la cotización: prima y límites" camunda:delegateExpression="${c3CalcularCotizacion}">
+      <bpmn:incoming>Flow_C3_Accept</bpmn:incoming>
+      <bpmn:outgoing>Flow_C3_13</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_C3_PlanMejora" name="Generar plan de mejora y reevaluación a 90 días" camunda:delegateExpression="${c3GenerarPlanMejora}">
+      <bpmn:incoming>Flow_C3_Decline</bpmn:incoming>
+      <bpmn:outgoing>Flow_C3_14</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Gateway_C3_MergeFinal">
+      <bpmn:incoming>Flow_C3_13</bpmn:incoming>
+      <bpmn:incoming>Flow_C3_14</bpmn:incoming>
+      <bpmn:outgoing>Flow_C3_15</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Task_C3_RegistrarDecision" name="Registrar la decisión en el expediente" camunda:delegateExpression="${c3RegistrarDecision}">
+      <bpmn:incoming>Flow_C3_15</bpmn:incoming>
+      <bpmn:outgoing>Flow_C3_16</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:callActivity id="Task_C3_NotificarDecision" name="Notificar la decisión al canal" calledElement="Process_C3_NotificarCanal">
+      <bpmn:extensionElements>
+        <camunda:in businessKey="#{execution.processBusinessKey}" />
+        <camunda:in variables="all" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_C3_16</bpmn:incoming>
+      <bpmn:outgoing>Flow_C3_17</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:endEvent id="EndEvent_C3_DecisionNotificada" name="Decisión notificada al canal">
+      <bpmn:incoming>Flow_C3_17</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:boundaryEvent id="Boundary_C3_SesionVencida" name="Sesión vencida (24 h)" attachedToRef="Task_C3_RecibirRespuestas">
+      <bpmn:outgoing>Flow_C3_05</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TED_Boundary_C3_SesionVencida">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT24H</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_C3">
+    <bpmndi:BPMNPlane id="BPMNPlane_C3" bpmnElement="Collaboration_C3">
+      <bpmndi:BPMNShape id="Participant_C3_ARCA_di" bpmnElement="Participant_C3_ARCA" isHorizontal="true">
+        <dc:Bounds x="150" y="190" width="2880" height="680" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_C3_Director_di" bpmnElement="Lane_C3_Director" isHorizontal="true">
+        <dc:Bounds x="180" y="740" width="2850" height="130" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_C3_Actuario_di" bpmnElement="Lane_C3_Actuario" isHorizontal="true">
+        <dc:Bounds x="180" y="610" width="2850" height="130" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_C3_Suscriptor_di" bpmnElement="Lane_C3_Suscriptor" isHorizontal="true">
+        <dc:Bounds x="180" y="480" width="2850" height="130" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_C3_Plataforma_di" bpmnElement="Lane_C3_Plataforma" isHorizontal="true">
+        <dc:Bounds x="180" y="190" width="2850" height="290" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_C3_CuestionarioIniciado_di" bpmnElement="StartEvent_C3_CuestionarioIniciado">
+        <dc:Bounds x="242" y="287" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="213" y="328" width="94" height="28" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_C3_CalcularPreScore_di" bpmnElement="Task_C3_CalcularPreScore">
+        <dc:Bounds x="470" y="265" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_C3_PresentarCuestionario_di" bpmnElement="Task_C3_PresentarCuestionario">
+        <dc:Bounds x="630" y="265" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_C3_RecibirRespuestas_di" bpmnElement="Task_C3_RecibirRespuestas">
+        <dc:Bounds x="790" y="265" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_C3_EvaluacionAbandonada_di" bpmnElement="EndEvent_C3_EvaluacionAbandonada">
+        <dc:Bounds x="787" y="407" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="830" y="429" width="62" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_C3_CalcularPuntaje_di" bpmnElement="Task_C3_CalcularPuntaje">
+        <dc:Bounds x="950" y="265" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_C3_MostrarResultados_di" bpmnElement="Task_C3_MostrarResultados">
+        <dc:Bounds x="1110" y="265" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_C3_DeterminarRuta_di" bpmnElement="Task_C3_DeterminarRuta">
+        <dc:Bounds x="1270" y="265" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_C3_Ruta_di" bpmnElement="Gateway_C3_Ruta" isMarkerVisible="true">
+        <dc:Bounds x="1455" y="280" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1427" y="261" width="37" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_C3_RevisarCaso_di" bpmnElement="Task_C3_RevisarCaso">
+        <dc:Bounds x="1590" y="505" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_C3_AnalizarCaso_di" bpmnElement="Task_C3_AnalizarCaso">
+        <dc:Bounds x="1590" y="635" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_C3_ResolverCaso_di" bpmnElement="Task_C3_ResolverCaso">
+        <dc:Bounds x="1750" y="765" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_C3_MergeRevision_di" bpmnElement="Gateway_C3_MergeRevision" isMarkerVisible="true">
+        <dc:Bounds x="1935" y="280" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_C3_Decision_di" bpmnElement="Gateway_C3_Decision" isMarkerVisible="true">
+        <dc:Bounds x="2095" y="280" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2081" y="261" width="79" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_C3_CalcularCotizacion_di" bpmnElement="Task_C3_CalcularCotizacion">
+        <dc:Bounds x="2230" y="265" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_C3_PlanMejora_di" bpmnElement="Task_C3_PlanMejora">
+        <dc:Bounds x="2230" y="385" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_C3_MergeFinal_di" bpmnElement="Gateway_C3_MergeFinal" isMarkerVisible="true">
+        <dc:Bounds x="2415" y="280" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_C3_RegistrarDecision_di" bpmnElement="Task_C3_RegistrarDecision">
+        <dc:Bounds x="2550" y="265" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_C3_NotificarDecision_di" bpmnElement="Task_C3_NotificarDecision">
+        <dc:Bounds x="2710" y="265" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_C3_DecisionNotificada_di" bpmnElement="EndEvent_C3_DecisionNotificada">
+        <dc:Bounds x="2902" y="287" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2876" y="328" width="89" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Boundary_C3_SesionVencida_di" bpmnElement="Boundary_C3_SesionVencida">
+        <dc:Bounds x="787" y="327" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="709" y="349" width="75" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_C3_01_di" bpmnElement="Flow_C3_01">
+        <di:waypoint x="278" y="305" />
+        <di:waypoint x="470" y="305" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C3_02_di" bpmnElement="Flow_C3_02">
+        <di:waypoint x="570" y="305" />
+        <di:waypoint x="630" y="305" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C3_03_di" bpmnElement="Flow_C3_03">
+        <di:waypoint x="730" y="305" />
+        <di:waypoint x="790" y="305" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C3_04_di" bpmnElement="Flow_C3_04">
+        <di:waypoint x="890" y="305" />
+        <di:waypoint x="950" y="305" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C3_05_di" bpmnElement="Flow_C3_05">
+        <di:waypoint x="805" y="363" />
+        <di:waypoint x="805" y="407" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C3_06_di" bpmnElement="Flow_C3_06">
+        <di:waypoint x="1050" y="305" />
+        <di:waypoint x="1110" y="305" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C3_07_di" bpmnElement="Flow_C3_07">
+        <di:waypoint x="1210" y="305" />
+        <di:waypoint x="1270" y="305" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C3_08_di" bpmnElement="Flow_C3_08">
+        <di:waypoint x="1370" y="305" />
+        <di:waypoint x="1455" y="305" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C3_Guarded_di" bpmnElement="Flow_C3_Guarded">
+        <di:waypoint x="1505" y="305" />
+        <di:waypoint x="1640" y="305" />
+        <di:waypoint x="1640" y="505" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1516" y="260" width="78" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C3_Exposed_di" bpmnElement="Flow_C3_Exposed">
+        <di:waypoint x="1480" y="330" />
+        <di:waypoint x="1480" y="675" />
+        <di:waypoint x="1590" y="675" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1483" y="488" width="67" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C3_SinRevision_di" bpmnElement="Flow_C3_SinRevision">
+        <di:waypoint x="1480" y="280" />
+        <di:waypoint x="1480" y="215" />
+        <di:waypoint x="1960" y="215" />
+        <di:waypoint x="1960" y="280" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1769" y="219" width="63" height="53" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C3_09_di" bpmnElement="Flow_C3_09">
+        <di:waypoint x="1690" y="545" />
+        <di:waypoint x="1812" y="545" />
+        <di:waypoint x="1812" y="305" />
+        <di:waypoint x="1935" y="305" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C3_10_di" bpmnElement="Flow_C3_10">
+        <di:waypoint x="1690" y="675" />
+        <di:waypoint x="1720" y="675" />
+        <di:waypoint x="1720" y="805" />
+        <di:waypoint x="1750" y="805" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C3_11_di" bpmnElement="Flow_C3_11">
+        <di:waypoint x="1850" y="805" />
+        <di:waypoint x="1960" y="805" />
+        <di:waypoint x="1960" y="330" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C3_12_di" bpmnElement="Flow_C3_12">
+        <di:waypoint x="1985" y="305" />
+        <di:waypoint x="2095" y="305" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C3_Accept_di" bpmnElement="Flow_C3_Accept">
+        <di:waypoint x="2145" y="305" />
+        <di:waypoint x="2230" y="305" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2149" y="288" width="45" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C3_Decline_di" bpmnElement="Flow_C3_Decline">
+        <di:waypoint x="2120" y="330" />
+        <di:waypoint x="2120" y="425" />
+        <di:waypoint x="2230" y="425" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2125" y="370" width="48" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C3_13_di" bpmnElement="Flow_C3_13">
+        <di:waypoint x="2330" y="305" />
+        <di:waypoint x="2415" y="305" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C3_14_di" bpmnElement="Flow_C3_14">
+        <di:waypoint x="2330" y="425" />
+        <di:waypoint x="2440" y="425" />
+        <di:waypoint x="2440" y="330" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C3_15_di" bpmnElement="Flow_C3_15">
+        <di:waypoint x="2465" y="305" />
+        <di:waypoint x="2550" y="305" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C3_16_di" bpmnElement="Flow_C3_16">
+        <di:waypoint x="2650" y="305" />
+        <di:waypoint x="2710" y="305" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C3_17_di" bpmnElement="Flow_C3_17">
+        <di:waypoint x="2810" y="305" />
+        <di:waypoint x="2902" y="305" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Participant_C3_Canal_di" bpmnElement="Participant_C3_Canal" isHorizontal="true">
+        <dc:Bounds x="150" y="80" width="2780" height="60" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="MessageFlow_C3_Inicio_di" bpmnElement="MessageFlow_C3_Inicio">
+        <di:waypoint x="260" y="140" />
+        <di:waypoint x="260" y="287" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="266" y="146" width="40" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_C3_Cuestionario_di" bpmnElement="MessageFlow_C3_Cuestionario">
+        <di:waypoint x="680" y="265" />
+        <di:waypoint x="680" y="140" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="690" y="146" width="62" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_C3_Respuestas_di" bpmnElement="MessageFlow_C3_Respuestas">
+        <di:waypoint x="840" y="140" />
+        <di:waypoint x="840" y="265" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="849" y="146" width="59" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_C3_Resultados_di" bpmnElement="MessageFlow_C3_Resultados">
+        <di:waypoint x="1160" y="265" />
+        <di:waypoint x="1160" y="140" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1160" y="146" width="88" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_C3_Decision_di" bpmnElement="MessageFlow_C3_Decision">
+        <di:waypoint x="2760" y="265" />
+        <di:waypoint x="2760" y="140" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2772" y="146" width="59" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

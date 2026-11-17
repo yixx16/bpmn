@@ -1,0 +1,428 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_C10" targetNamespace="http://arca.ai/procesos/bpmn" exporter="Camunda Modeler" exporterVersion="5.51.1" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.24.0">
+  <bpmn:message id="Message_C10_AvisoReclamacion" name="AvisoReclamacion" />
+  <bpmn:collaboration id="Collaboration_C10">
+    <bpmn:participant id="Participant_C10_ARCA" name="ARCA · C10 Registrar el aviso de siniestro" processRef="Process_C10_RegistrarAvisoSiniestro" />
+    <bpmn:participant id="Participant_C10_Firma" name="Firma asegurada" />
+    <bpmn:messageFlow id="MessageFlow_C10_Aviso" name="Aviso de reclamación" sourceRef="Participant_C10_Firma" targetRef="StartEvent_C10_AvisoRecibido" />
+    <bpmn:messageFlow id="MessageFlow_C10_Acuse" name="Acuse de recibo" sourceRef="Task_C10_AcusarRecibo" targetRef="Participant_C10_Firma" />
+    <bpmn:messageFlow id="MessageFlow_C10_Preverificacion" name="Preverificación de cobertura" sourceRef="Task_C10_ComunicarPreverificacion" targetRef="Participant_C10_Firma" />
+    <bpmn:messageFlow id="MessageFlow_C10_SinCobertura" name="Comunicación de no cobertura" sourceRef="Task_C10_ComunicarSinCobertura" targetRef="Participant_C10_Firma" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_C10_RegistrarAvisoSiniestro" name="C10 Registrar el aviso de siniestro" isExecutable="true" camunda:historyTimeToLive="180">
+    <bpmn:documentation>Proceso core de la cadena CV2 Aviso-a-Pago. Dueño: Jefe de Siniestros. Disparador: reclamación contra el asegurado por un error profesional atribuido al uso de IA (interfaz de entrada: póliza vigente emitida en C4). Resultado: siniestro registrado, expediente abierto y cobertura preverificada (interfaz de salida C11 Ajustar el siniestro). La vigencia se verifica a la fecha del hecho y a la de la reclamación. Medidas: tiempo de respuesta inicial, tiempo de preverificación, % avisos sin cobertura, completitud del expediente.</bpmn:documentation>
+    <bpmn:laneSet id="LaneSet_C10">
+      <bpmn:lane id="Lane_C10_Motor" name="Motor de siniestros">
+        <bpmn:flowNodeRef>StartEvent_C10_AvisoRecibido</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_C10_AcusarRecibo</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_C10_VerificarVigencia</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_C10_Vigente</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_C10_RecuperarPoliza</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_C10_AbrirExpediente</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_C10_ComunicarPreverificacion</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_C10_SiniestroRegistrado</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_C10_MergeSinCobertura</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_C10_RegistrarSinCobertura</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_C10_ComunicarSinCobertura</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_C10_AvisoSinCobertura</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_C10_JefeSiniestros" name="Jefe de Siniestros">
+        <bpmn:flowNodeRef>Task_C10_RevisarAviso</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_C10_Concepto</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_C10_MergeConcepto</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_C10_Preverificar</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_C10_Resultado</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_C10_RequiereConcepto</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Boundary_C10_SinPreverificar</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_C10_InformarEstado</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_C10_EstadoInformado</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_C10_AsesorJuridico" name="Asesor Jurídico">
+        <bpmn:flowNodeRef>Task_C10_ConceptoJuridico</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="StartEvent_C10_AvisoRecibido" name="Aviso de reclamación recibido">
+      <bpmn:outgoing>Flow_C10_01</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_StartEvent_C10_AvisoRecibido" messageRef="Message_C10_AvisoReclamacion" />
+    </bpmn:startEvent>
+    <bpmn:sendTask id="Task_C10_AcusarRecibo" name="Enviar el acuse de recibo a la firma" camunda:delegateExpression="${c10AcusarRecibo}">
+      <bpmn:incoming>Flow_C10_01</bpmn:incoming>
+      <bpmn:outgoing>Flow_C10_02</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:serviceTask id="Task_C10_VerificarVigencia" name="Verificar la vigencia de la póliza a la fecha del hecho" camunda:delegateExpression="${c10VerificarVigencia}">
+      <bpmn:incoming>Flow_C10_02</bpmn:incoming>
+      <bpmn:outgoing>Flow_C10_03</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Gateway_C10_Vigente" name="¿Póliza vigente?" default="Flow_C10_NoVigente">
+      <bpmn:incoming>Flow_C10_03</bpmn:incoming>
+      <bpmn:outgoing>Flow_C10_Vigente</bpmn:outgoing>
+      <bpmn:outgoing>Flow_C10_NoVigente</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Task_C10_RecuperarPoliza" name="Recuperar póliza, límites, exclusiones y expediente" camunda:delegateExpression="${c10RecuperarPoliza}">
+      <bpmn:incoming>Flow_C10_Vigente</bpmn:incoming>
+      <bpmn:outgoing>Flow_C10_04</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:userTask id="Task_C10_RevisarAviso" name="Revisar el aviso frente a límites y exclusiones" camunda:candidateGroups="jefes-siniestros" camunda:formRef="C10-revisar-aviso" camunda:formRefBinding="deployment">
+      <bpmn:incoming>Flow_C10_04</bpmn:incoming>
+      <bpmn:outgoing>Flow_C10_05</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gateway_C10_Concepto" name="¿Requiere concepto jurídico?" default="Flow_C10_SinConcepto">
+      <bpmn:incoming>Flow_C10_DMN</bpmn:incoming>
+      <bpmn:outgoing>Flow_C10_ConConcepto</bpmn:outgoing>
+      <bpmn:outgoing>Flow_C10_SinConcepto</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="Task_C10_ConceptoJuridico" name="Emitir el concepto jurídico sobre la cobertura" camunda:candidateGroups="asesoria-juridica" camunda:formRef="C10-concepto-juridico" camunda:formRefBinding="deployment">
+      <bpmn:incoming>Flow_C10_ConConcepto</bpmn:incoming>
+      <bpmn:outgoing>Flow_C10_06</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gateway_C10_MergeConcepto">
+      <bpmn:incoming>Flow_C10_SinConcepto</bpmn:incoming>
+      <bpmn:incoming>Flow_C10_06</bpmn:incoming>
+      <bpmn:outgoing>Flow_C10_07</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="Task_C10_Preverificar" name="Determinar la preverificación de cobertura" camunda:candidateGroups="jefes-siniestros" camunda:formRef="C10-preverificacion" camunda:formRefBinding="deployment">
+      <bpmn:incoming>Flow_C10_07</bpmn:incoming>
+      <bpmn:outgoing>Flow_C10_08</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gateway_C10_Resultado" name="¿Resultado?" default="Flow_C10_SinCobertura">
+      <bpmn:incoming>Flow_C10_08</bpmn:incoming>
+      <bpmn:outgoing>Flow_C10_ConCobertura</bpmn:outgoing>
+      <bpmn:outgoing>Flow_C10_SinCobertura</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Task_C10_AbrirExpediente" name="Abrir el expediente del siniestro" camunda:delegateExpression="${c10AbrirExpediente}">
+      <bpmn:incoming>Flow_C10_ConCobertura</bpmn:incoming>
+      <bpmn:outgoing>Flow_C10_09</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:callActivity id="Task_C10_ComunicarPreverificacion" name="Comunicar la preverificación y los siguientes pasos" calledElement="Process_C10_ComunicarFirma" camunda:calledElementBinding="latest">
+      <bpmn:extensionElements>
+        <camunda:in businessKey="#{execution.processBusinessKey}" />
+        <camunda:in variables="all" />
+        <camunda:in sourceExpression="${'PREVERIFICACION'}" target="tipoComunicacion" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_C10_09</bpmn:incoming>
+      <bpmn:outgoing>Flow_C10_10</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:endEvent id="EndEvent_C10_SiniestroRegistrado" name="Siniestro registrado">
+      <bpmn:incoming>Flow_C10_10</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:exclusiveGateway id="Gateway_C10_MergeSinCobertura">
+      <bpmn:incoming>Flow_C10_NoVigente</bpmn:incoming>
+      <bpmn:incoming>Flow_C10_SinCobertura</bpmn:incoming>
+      <bpmn:outgoing>Flow_C10_11</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Task_C10_RegistrarSinCobertura" name="Registrar el aviso como sin cobertura" camunda:delegateExpression="${c10RegistrarSinCobertura}">
+      <bpmn:incoming>Flow_C10_11</bpmn:incoming>
+      <bpmn:outgoing>Flow_C10_12</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:callActivity id="Task_C10_ComunicarSinCobertura" name="Comunicar la ausencia de cobertura y su fundamento" calledElement="Process_C10_ComunicarFirma" camunda:calledElementBinding="latest">
+      <bpmn:extensionElements>
+        <camunda:in businessKey="#{execution.processBusinessKey}" />
+        <camunda:in variables="all" />
+        <camunda:in sourceExpression="${'SIN_COBERTURA'}" target="tipoComunicacion" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_C10_12</bpmn:incoming>
+      <bpmn:outgoing>Flow_C10_13</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:endEvent id="EndEvent_C10_AvisoSinCobertura" name="Aviso cerrado sin cobertura">
+      <bpmn:incoming>Flow_C10_13</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_C10_01" sourceRef="StartEvent_C10_AvisoRecibido" targetRef="Task_C10_AcusarRecibo" />
+    <bpmn:sequenceFlow id="Flow_C10_02" sourceRef="Task_C10_AcusarRecibo" targetRef="Task_C10_VerificarVigencia" />
+    <bpmn:sequenceFlow id="Flow_C10_03" sourceRef="Task_C10_VerificarVigencia" targetRef="Gateway_C10_Vigente" />
+    <bpmn:sequenceFlow id="Flow_C10_Vigente" name="Sí" sourceRef="Gateway_C10_Vigente" targetRef="Task_C10_RecuperarPoliza">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${polizaVigente}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_C10_NoVigente" name="No" sourceRef="Gateway_C10_Vigente" targetRef="Gateway_C10_MergeSinCobertura" />
+    <bpmn:sequenceFlow id="Flow_C10_04" sourceRef="Task_C10_RecuperarPoliza" targetRef="Task_C10_RevisarAviso" />
+    <bpmn:sequenceFlow id="Flow_C10_05" sourceRef="Task_C10_RevisarAviso" targetRef="Task_C10_RequiereConcepto" />
+    <bpmn:sequenceFlow id="Flow_C10_ConConcepto" name="Sí" sourceRef="Gateway_C10_Concepto" targetRef="Task_C10_ConceptoJuridico">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${requiereConceptoJuridico}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_C10_SinConcepto" name="No" sourceRef="Gateway_C10_Concepto" targetRef="Gateway_C10_MergeConcepto" />
+    <bpmn:sequenceFlow id="Flow_C10_06" sourceRef="Task_C10_ConceptoJuridico" targetRef="Gateway_C10_MergeConcepto" />
+    <bpmn:sequenceFlow id="Flow_C10_07" sourceRef="Gateway_C10_MergeConcepto" targetRef="Task_C10_Preverificar" />
+    <bpmn:sequenceFlow id="Flow_C10_08" sourceRef="Task_C10_Preverificar" targetRef="Gateway_C10_Resultado" />
+    <bpmn:sequenceFlow id="Flow_C10_ConCobertura" name="Cubierto o con reserva" sourceRef="Gateway_C10_Resultado" targetRef="Task_C10_AbrirExpediente">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${resultadoPreverificacion != 'SIN_COBERTURA'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_C10_SinCobertura" name="Sin cobertura" sourceRef="Gateway_C10_Resultado" targetRef="Gateway_C10_MergeSinCobertura" />
+    <bpmn:sequenceFlow id="Flow_C10_09" sourceRef="Task_C10_AbrirExpediente" targetRef="Task_C10_ComunicarPreverificacion" />
+    <bpmn:sequenceFlow id="Flow_C10_10" sourceRef="Task_C10_ComunicarPreverificacion" targetRef="EndEvent_C10_SiniestroRegistrado" />
+    <bpmn:sequenceFlow id="Flow_C10_11" sourceRef="Gateway_C10_MergeSinCobertura" targetRef="Task_C10_RegistrarSinCobertura" />
+    <bpmn:sequenceFlow id="Flow_C10_12" sourceRef="Task_C10_RegistrarSinCobertura" targetRef="Task_C10_ComunicarSinCobertura" />
+    <bpmn:sequenceFlow id="Flow_C10_13" sourceRef="Task_C10_ComunicarSinCobertura" targetRef="EndEvent_C10_AvisoSinCobertura" />
+    <bpmn:businessRuleTask id="Task_C10_RequiereConcepto" name="Determinar si requiere concepto jurídico" camunda:decisionRef="C10_RequiereConceptoJuridico" camunda:resultVariable="requiereConceptoJuridico" camunda:mapDecisionResult="singleEntry">
+      <bpmn:incoming>Flow_C10_05</bpmn:incoming>
+      <bpmn:outgoing>Flow_C10_DMN</bpmn:outgoing>
+    </bpmn:businessRuleTask>
+    <bpmn:sequenceFlow id="Flow_C10_DMN" sourceRef="Task_C10_RequiereConcepto" targetRef="Gateway_C10_Concepto" />
+    <bpmn:boundaryEvent id="Boundary_C10_SinPreverificar" name="24 h sin preverificar" attachedToRef="Task_C10_Preverificar" cancelActivity="false">
+      <bpmn:outgoing>Flow_C10_Timer24h</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerEventDefinition_C10_24h">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT24H</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:sendTask id="Task_C10_InformarEstado" name="Informar a la firma el estado del aviso" camunda:delegateExpression="${c10InformarEstado}">
+      <bpmn:incoming>Flow_C10_Timer24h</bpmn:incoming>
+      <bpmn:outgoing>Flow_C10_EstadoInformado</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:endEvent id="EndEvent_C10_EstadoInformado" name="Estado informado">
+      <bpmn:incoming>Flow_C10_EstadoInformado</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_C10_Timer24h" sourceRef="Boundary_C10_SinPreverificar" targetRef="Task_C10_InformarEstado" />
+    <bpmn:sequenceFlow id="Flow_C10_EstadoInformado" sourceRef="Task_C10_InformarEstado" targetRef="EndEvent_C10_EstadoInformado" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_C10">
+    <bpmndi:BPMNPlane id="BPMNPlane_C10" bpmnElement="Collaboration_C10">
+      <bpmndi:BPMNShape id="Participant_C10_ARCA_di" bpmnElement="Participant_C10_ARCA" isHorizontal="true">
+        <dc:Bounds x="150" y="190" width="3100" height="670" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_C10_AsesorJuridico_di" bpmnElement="Lane_C10_AsesorJuridico" isHorizontal="true">
+        <dc:Bounds x="180" y="730" width="3070" height="130" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_C10_JefeSiniestros_di" bpmnElement="Lane_C10_JefeSiniestros" isHorizontal="true">
+        <dc:Bounds x="180" y="490" width="3070" height="240" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_C10_Motor_di" bpmnElement="Lane_C10_Motor" isHorizontal="true">
+        <dc:Bounds x="180" y="190" width="3070" height="300" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_C10_AvisoRecibido_di" bpmnElement="StartEvent_C10_AvisoRecibido">
+        <dc:Bounds x="242" y="290" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="225" y="330" width="70" height="42" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_C10_AcusarRecibo_di" bpmnElement="Task_C10_AcusarRecibo">
+        <dc:Bounds x="370" y="268" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_C10_VerificarVigencia_di" bpmnElement="Task_C10_VerificarVigencia">
+        <dc:Bounds x="530" y="268" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_C10_Vigente_di" bpmnElement="Gateway_C10_Vigente" isMarkerVisible="true">
+        <dc:Bounds x="715" y="282" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="763" y="250" width="52" height="28" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_C10_RecuperarPoliza_di" bpmnElement="Task_C10_RecuperarPoliza">
+        <dc:Bounds x="850" y="268" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_C10_RevisarAviso_di" bpmnElement="Task_C10_RevisarAviso">
+        <dc:Bounds x="1010" y="515" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_C10_Concepto_di" bpmnElement="Gateway_C10_Concepto" isMarkerVisible="true">
+        <dc:Bounds x="1355" y="530" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1305" y="497" width="150" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_C10_ConceptoJuridico_di" bpmnElement="Task_C10_ConceptoJuridico">
+        <dc:Bounds x="1490" y="755" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_C10_MergeConcepto_di" bpmnElement="Gateway_C10_MergeConcepto" isMarkerVisible="true">
+        <dc:Bounds x="1675" y="530" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_C10_Preverificar_di" bpmnElement="Task_C10_Preverificar">
+        <dc:Bounds x="1810" y="515" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_C10_Resultado_di" bpmnElement="Gateway_C10_Resultado" isMarkerVisible="true">
+        <dc:Bounds x="1995" y="530" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1945" y="511" width="60" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_C10_AbrirExpediente_di" bpmnElement="Task_C10_AbrirExpediente">
+        <dc:Bounds x="2130" y="268" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_C10_ComunicarPreverificacion_di" bpmnElement="Task_C10_ComunicarPreverificacion">
+        <dc:Bounds x="2290" y="268" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_C10_SiniestroRegistrado_di" bpmnElement="EndEvent_C10_SiniestroRegistrado">
+        <dc:Bounds x="2482" y="290" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2468" y="330" width="64" height="28" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_C10_MergeSinCobertura_di" bpmnElement="Gateway_C10_MergeSinCobertura" isMarkerVisible="true">
+        <dc:Bounds x="2635" y="405" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_C10_RegistrarSinCobertura_di" bpmnElement="Task_C10_RegistrarSinCobertura">
+        <dc:Bounds x="2770" y="390" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_C10_ComunicarSinCobertura_di" bpmnElement="Task_C10_ComunicarSinCobertura">
+        <dc:Bounds x="2930" y="390" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_C10_AvisoSinCobertura_di" bpmnElement="EndEvent_C10_AvisoSinCobertura">
+        <dc:Bounds x="3122" y="412" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="3099" y="453" width="82" height="28" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_C10_RequiereConcepto_di" bpmnElement="Task_C10_RequiereConcepto">
+        <dc:Bounds x="1190" y="515" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Boundary_C10_SinPreverificar_di" bpmnElement="Boundary_C10_SinPreverificar">
+        <dc:Bounds x="1842" y="577" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1768" y="599" width="68" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_C10_InformarEstado_di" bpmnElement="Task_C10_InformarEstado">
+        <dc:Bounds x="1810" y="635" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_C10_EstadoInformado_di" bpmnElement="EndEvent_C10_EstadoInformado">
+        <dc:Bounds x="1972" y="657" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1950" y="698" width="80" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_C10_01_di" bpmnElement="Flow_C10_01">
+        <di:waypoint x="278" y="308" />
+        <di:waypoint x="370" y="308" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C10_02_di" bpmnElement="Flow_C10_02">
+        <di:waypoint x="470" y="308" />
+        <di:waypoint x="530" y="308" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C10_03_di" bpmnElement="Flow_C10_03">
+        <di:waypoint x="630" y="308" />
+        <di:waypoint x="715" y="308" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C10_Vigente_di" bpmnElement="Flow_C10_Vigente">
+        <di:waypoint x="765" y="308" />
+        <di:waypoint x="850" y="308" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="771" y="290" width="16" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C10_NoVigente_di" bpmnElement="Flow_C10_NoVigente">
+        <di:waypoint x="740" y="282" />
+        <di:waypoint x="740" y="218" />
+        <di:waypoint x="2660" y="218" />
+        <di:waypoint x="2660" y="405" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="748" y="200" width="16" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C10_04_di" bpmnElement="Flow_C10_04">
+        <di:waypoint x="950" y="308" />
+        <di:waypoint x="980" y="308" />
+        <di:waypoint x="980" y="555" />
+        <di:waypoint x="1010" y="555" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C10_05_di" bpmnElement="Flow_C10_05">
+        <di:waypoint x="1110" y="555" />
+        <di:waypoint x="1190" y="555" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C10_ConConcepto_di" bpmnElement="Flow_C10_ConConcepto">
+        <di:waypoint x="1380" y="580" />
+        <di:waypoint x="1380" y="795" />
+        <di:waypoint x="1490" y="795" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1386" y="736" width="16" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C10_SinConcepto_di" bpmnElement="Flow_C10_SinConcepto">
+        <di:waypoint x="1405" y="555" />
+        <di:waypoint x="1675" y="555" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1411" y="538" width="16" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C10_06_di" bpmnElement="Flow_C10_06">
+        <di:waypoint x="1590" y="795" />
+        <di:waypoint x="1700" y="795" />
+        <di:waypoint x="1700" y="580" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C10_07_di" bpmnElement="Flow_C10_07">
+        <di:waypoint x="1725" y="555" />
+        <di:waypoint x="1810" y="555" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C10_08_di" bpmnElement="Flow_C10_08">
+        <di:waypoint x="1910" y="555" />
+        <di:waypoint x="1995" y="555" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C10_ConCobertura_di" bpmnElement="Flow_C10_ConCobertura">
+        <di:waypoint x="2020" y="530" />
+        <di:waypoint x="2020" y="308" />
+        <di:waypoint x="2130" y="308" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2026" y="405" width="70" height="28" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C10_SinCobertura_di" bpmnElement="Flow_C10_SinCobertura">
+        <di:waypoint x="2045" y="555" />
+        <di:waypoint x="2660" y="555" />
+        <di:waypoint x="2660" y="455" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2051" y="538" width="82" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C10_09_di" bpmnElement="Flow_C10_09">
+        <di:waypoint x="2230" y="308" />
+        <di:waypoint x="2290" y="308" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C10_10_di" bpmnElement="Flow_C10_10">
+        <di:waypoint x="2390" y="308" />
+        <di:waypoint x="2482" y="308" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C10_11_di" bpmnElement="Flow_C10_11">
+        <di:waypoint x="2685" y="430" />
+        <di:waypoint x="2770" y="430" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C10_12_di" bpmnElement="Flow_C10_12">
+        <di:waypoint x="2870" y="430" />
+        <di:waypoint x="2930" y="430" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C10_13_di" bpmnElement="Flow_C10_13">
+        <di:waypoint x="3030" y="430" />
+        <di:waypoint x="3122" y="430" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Participant_C10_Firma_di" bpmnElement="Participant_C10_Firma" isHorizontal="true">
+        <dc:Bounds x="150" y="80" width="3100" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="MessageFlow_C10_Aviso_di" bpmnElement="MessageFlow_C10_Aviso">
+        <di:waypoint x="260" y="140" />
+        <di:waypoint x="260" y="290" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="266" y="146" width="70" height="28" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_C10_Acuse_di" bpmnElement="MessageFlow_C10_Acuse">
+        <di:waypoint x="420" y="268" />
+        <di:waypoint x="420" y="140" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="430" y="153" width="79" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_C10_Preverificacion_di" bpmnElement="MessageFlow_C10_Preverificacion">
+        <di:waypoint x="2340" y="268" />
+        <di:waypoint x="2340" y="140" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2346" y="146" width="80" height="28" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_C10_SinCobertura_di" bpmnElement="MessageFlow_C10_SinCobertura">
+        <di:waypoint x="2980" y="390" />
+        <di:waypoint x="2980" y="140" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2997" y="146" width="85" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C10_DMN_di" bpmnElement="Flow_C10_DMN">
+        <di:waypoint x="1290" y="555" />
+        <di:waypoint x="1355" y="555" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C10_Timer24h_di" bpmnElement="Flow_C10_Timer24h">
+        <di:waypoint x="1860" y="613" />
+        <di:waypoint x="1860" y="635" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C10_EstadoInformado_di" bpmnElement="Flow_C10_EstadoInformado">
+        <di:waypoint x="1910" y="675" />
+        <di:waypoint x="1972" y="675" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

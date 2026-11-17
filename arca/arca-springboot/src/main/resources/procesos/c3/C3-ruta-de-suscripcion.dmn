@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:camunda="http://camunda.org/schema/1.0/dmn" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_C3_RutaSuscripcion" name="C3 Ruta de suscripción" namespace="http://camunda.org/schema/1.0/dmn" exporter="Claude Code" exporterVersion="1.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.24.0">
+  <decision id="C3_RutaSuscripcion" name="Ruta de suscripción por tier" camunda:historyTimeToLive="180">
+    <decisionTable id="DecisionTable_C3_RutaSuscripcion" hitPolicy="FIRST">
+      <input id="Input_C3_RutaSuscripcion_1" label="Revisión forzada">
+        <inputExpression id="InputExpression_C3_RutaSuscripcion_1" typeRef="boolean"><text>revisionForzada</text></inputExpression>
+      </input>
+      <input id="Input_C3_RutaSuscripcion_2" label="Puntaje compuesto">
+        <inputExpression id="InputExpression_C3_RutaSuscripcion_2" typeRef="double"><text>puntaje</text></inputExpression>
+      </input>
+      <output id="Output_C3_RutaSuscripcion_1" label="Tier" name="tier" typeRef="string" />
+      <output id="Output_C3_RutaSuscripcion_2" label="Ruta" name="ruta" typeRef="string" />
+      <output id="Output_C3_RutaSuscripcion_3" label="Decisión automática" name="decision" typeRef="string" />
+      <rule id="Rule_C3_RutaSuscripcion_1">
+        <description>Revisión forzada con puntaje FORTRESS</description>
+        <inputEntry id="InputEntry_C3_RutaSuscripcion_1_1"><text>true</text></inputEntry>
+        <inputEntry id="InputEntry_C3_RutaSuscripcion_1_2"><text>&gt;= 80</text></inputEntry>
+        <outputEntry id="OutputEntry_C3_RutaSuscripcion_1_1"><text>"FORTRESS"</text></outputEntry>
+        <outputEntry id="OutputEntry_C3_RutaSuscripcion_1_2"><text>"HUMANA"</text></outputEntry>
+        <outputEntry id="OutputEntry_C3_RutaSuscripcion_1_3"><text></text></outputEntry>
+      </rule>
+      <rule id="Rule_C3_RutaSuscripcion_2">
+        <description>Revisión forzada con puntaje FORTIFIED</description>
+        <inputEntry id="InputEntry_C3_RutaSuscripcion_2_1"><text>true</text></inputEntry>
+        <inputEntry id="InputEntry_C3_RutaSuscripcion_2_2"><text>[65..80[</text></inputEntry>
+        <outputEntry id="OutputEntry_C3_RutaSuscripcion_2_1"><text>"FORTIFIED"</text></outputEntry>
+        <outputEntry id="OutputEntry_C3_RutaSuscripcion_2_2"><text>"HUMANA"</text></outputEntry>
+        <outputEntry id="OutputEntry_C3_RutaSuscripcion_2_3"><text></text></outputEntry>
+      </rule>
+      <rule id="Rule_C3_RutaSuscripcion_3">
+        <description>Revisión forzada con puntaje GUARDED</description>
+        <inputEntry id="InputEntry_C3_RutaSuscripcion_3_1"><text>true</text></inputEntry>
+        <inputEntry id="InputEntry_C3_RutaSuscripcion_3_2"><text>[45..65[</text></inputEntry>
+        <outputEntry id="OutputEntry_C3_RutaSuscripcion_3_1"><text>"GUARDED"</text></outputEntry>
+        <outputEntry id="OutputEntry_C3_RutaSuscripcion_3_2"><text>"HUMANA"</text></outputEntry>
+        <outputEntry id="OutputEntry_C3_RutaSuscripcion_3_3"><text></text></outputEntry>
+      </rule>
+      <rule id="Rule_C3_RutaSuscripcion_4">
+        <description>Revisión forzada con puntaje EXPOSED: sigue en revisión senior</description>
+        <inputEntry id="InputEntry_C3_RutaSuscripcion_4_1"><text>true</text></inputEntry>
+        <inputEntry id="InputEntry_C3_RutaSuscripcion_4_2"><text>[25..45[</text></inputEntry>
+        <outputEntry id="OutputEntry_C3_RutaSuscripcion_4_1"><text>"EXPOSED"</text></outputEntry>
+        <outputEntry id="OutputEntry_C3_RutaSuscripcion_4_2"><text>"SENIOR"</text></outputEntry>
+        <outputEntry id="OutputEntry_C3_RutaSuscripcion_4_3"><text></text></outputEntry>
+      </rule>
+      <rule id="Rule_C3_RutaSuscripcion_5">
+        <description>Revisión forzada con puntaje CRITICAL</description>
+        <inputEntry id="InputEntry_C3_RutaSuscripcion_5_1"><text>true</text></inputEntry>
+        <inputEntry id="InputEntry_C3_RutaSuscripcion_5_2"><text>&lt; 25</text></inputEntry>
+        <outputEntry id="OutputEntry_C3_RutaSuscripcion_5_1"><text>"CRITICAL"</text></outputEntry>
+        <outputEntry id="OutputEntry_C3_RutaSuscripcion_5_2"><text>"HUMANA"</text></outputEntry>
+        <outputEntry id="OutputEntry_C3_RutaSuscripcion_5_3"><text></text></outputEntry>
+      </rule>
+      <rule id="Rule_C3_RutaSuscripcion_6">
+        <description>FORTRESS: emisión automática</description>
+        <inputEntry id="InputEntry_C3_RutaSuscripcion_6_1"><text>-</text></inputEntry>
+        <inputEntry id="InputEntry_C3_RutaSuscripcion_6_2"><text>&gt;= 80</text></inputEntry>
+        <outputEntry id="OutputEntry_C3_RutaSuscripcion_6_1"><text>"FORTRESS"</text></outputEntry>
+        <outputEntry id="OutputEntry_C3_RutaSuscripcion_6_2"><text>"SIN_REVISION"</text></outputEntry>
+        <outputEntry id="OutputEntry_C3_RutaSuscripcion_6_3"><text>"ACCEPT"</text></outputEntry>
+      </rule>
+      <rule id="Rule_C3_RutaSuscripcion_7">
+        <description>FORTIFIED: emisión automática con condiciones</description>
+        <inputEntry id="InputEntry_C3_RutaSuscripcion_7_1"><text>-</text></inputEntry>
+        <inputEntry id="InputEntry_C3_RutaSuscripcion_7_2"><text>[65..80[</text></inputEntry>
+        <outputEntry id="OutputEntry_C3_RutaSuscripcion_7_1"><text>"FORTIFIED"</text></outputEntry>
+        <outputEntry id="OutputEntry_C3_RutaSuscripcion_7_2"><text>"SIN_REVISION"</text></outputEntry>
+        <outputEntry id="OutputEntry_C3_RutaSuscripcion_7_3"><text>"ACCEPT"</text></outputEntry>
+      </rule>
+      <rule id="Rule_C3_RutaSuscripcion_8">
+        <description>GUARDED: revisión humana, cotización en 48 h</description>
+        <inputEntry id="InputEntry_C3_RutaSuscripcion_8_1"><text>-</text></inputEntry>
+        <inputEntry id="InputEntry_C3_RutaSuscripcion_8_2"><text>[45..65[</text></inputEntry>
+        <outputEntry id="OutputEntry_C3_RutaSuscripcion_8_1"><text>"GUARDED"</text></outputEntry>
+        <outputEntry id="OutputEntry_C3_RutaSuscripcion_8_2"><text>"HUMANA"</text></outputEntry>
+        <outputEntry id="OutputEntry_C3_RutaSuscripcion_8_3"><text></text></outputEntry>
+      </rule>
+      <rule id="Rule_C3_RutaSuscripcion_9">
+        <description>EXPOSED: revisión senior, cotización en 5 días</description>
+        <inputEntry id="InputEntry_C3_RutaSuscripcion_9_1"><text>-</text></inputEntry>
+        <inputEntry id="InputEntry_C3_RutaSuscripcion_9_2"><text>[25..45[</text></inputEntry>
+        <outputEntry id="OutputEntry_C3_RutaSuscripcion_9_1"><text>"EXPOSED"</text></outputEntry>
+        <outputEntry id="OutputEntry_C3_RutaSuscripcion_9_2"><text>"SENIOR"</text></outputEntry>
+        <outputEntry id="OutputEntry_C3_RutaSuscripcion_9_3"><text></text></outputEntry>
+      </rule>
+      <rule id="Rule_C3_RutaSuscripcion_10">
+        <description>CRITICAL: se declina con plan de mejora</description>
+        <inputEntry id="InputEntry_C3_RutaSuscripcion_10_1"><text>-</text></inputEntry>
+        <inputEntry id="InputEntry_C3_RutaSuscripcion_10_2"><text>&lt; 25</text></inputEntry>
+        <outputEntry id="OutputEntry_C3_RutaSuscripcion_10_1"><text>"CRITICAL"</text></outputEntry>
+        <outputEntry id="OutputEntry_C3_RutaSuscripcion_10_2"><text>"SIN_REVISION"</text></outputEntry>
+        <outputEntry id="OutputEntry_C3_RutaSuscripcion_10_3"><text>"DECLINE"</text></outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram id="DMNDiagram_C3_RutaSuscripcion">
+      <dmndi:DMNShape id="DMNShape_C3_RutaSuscripcion" dmnElementRef="C3_RutaSuscripcion">
+        <dc:Bounds height="80" width="180" x="160" y="100" />
+      </dmndi:DMNShape>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</definitions>

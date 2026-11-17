@@ -1,0 +1,49 @@
+{
+  "components": [
+    {
+      "label": "Identificador de la versión candidata",
+      "type": "textfield",
+      "id": "Field_c1",
+      "layout": {
+        "row": "Row_c1",
+        "columns": null
+      },
+      "key": "versionCandidata",
+      "validate": {
+        "required": true
+      },
+      "description": "Ejemplo: score-v1.3"
+    },
+    {
+      "label": "Datos usados en la calibración",
+      "type": "textarea",
+      "id": "Field_c2",
+      "layout": {
+        "row": "Row_c2",
+        "columns": null
+      },
+      "key": "datosCalibracion",
+      "validate": {
+        "required": true
+      }
+    },
+    {
+      "label": "Cambios en señales y pesos",
+      "type": "textarea",
+      "id": "Field_c3",
+      "layout": {
+        "row": "Row_c3",
+        "columns": null
+      },
+      "key": "cambiosSenalesPesos",
+      "validate": {
+        "required": true
+      }
+    }
+  ],
+  "type": "default",
+  "id": "g3-calibrar-rubrica",
+  "executionPlatform": "Camunda Platform",
+  "executionPlatformVersion": "7.24.0",
+  "schemaVersion": 16
+}

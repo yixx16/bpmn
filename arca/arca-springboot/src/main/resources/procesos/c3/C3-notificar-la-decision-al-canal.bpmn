@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_Process_C3_NotificarCanal" targetNamespace="http://arca.ai/procesos/bpmn" exporter="Claude Code" exporterVersion="1.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.24.0">
+  <bpmn:process id="Process_C3_NotificarCanal" name="C3.1 Notificar la decisión al canal" isExecutable="true" camunda:historyTimeToLive="180">
+    <bpmn:documentation>Proceso invocado por la Call Activity de C3. Envía al canal la decisión, el tier y, si aplica, la prima y el límite.</bpmn:documentation>
+    <bpmn:startEvent id="StartEvent_C3_NotificarCanal" name="Notificación solicitada">
+      <bpmn:outgoing>Flow_C3_NotificarCanal_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="Task_C3_NotificarCanal" name="Enviar la decisión y las condiciones al canal" camunda:delegateExpression="${c3EnviarNotificacion}">
+      <bpmn:incoming>Flow_C3_NotificarCanal_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_C3_NotificarCanal_2</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="EndEvent_C3_NotificarCanal" name="Decisión enviada">
+      <bpmn:incoming>Flow_C3_NotificarCanal_2</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_C3_NotificarCanal_1" sourceRef="StartEvent_C3_NotificarCanal" targetRef="Task_C3_NotificarCanal" />
+    <bpmn:sequenceFlow id="Flow_C3_NotificarCanal_2" sourceRef="Task_C3_NotificarCanal" targetRef="EndEvent_C3_NotificarCanal" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_Process_C3_NotificarCanal">
+    <bpmndi:BPMNPlane id="BPMNPlane_Process_C3_NotificarCanal" bpmnElement="Process_C3_NotificarCanal">
+      <bpmndi:BPMNShape id="StartEvent_C3_NotificarCanal_di" bpmnElement="StartEvent_C3_NotificarCanal">
+        <dc:Bounds x="152" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="125" y="145" width="90" height="27" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_C3_NotificarCanal_di" bpmnElement="Task_C3_NotificarCanal">
+        <dc:Bounds x="240" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_C3_NotificarCanal_di" bpmnElement="EndEvent_C3_NotificarCanal">
+        <dc:Bounds x="392" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="365" y="145" width="90" height="27" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_C3_NotificarCanal_1_di" bpmnElement="Flow_C3_NotificarCanal_1">
+        <di:waypoint x="188" y="120" />
+        <di:waypoint x="240" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C3_NotificarCanal_2_di" bpmnElement="Flow_C3_NotificarCanal_2">
+        <di:waypoint x="340" y="120" />
+        <di:waypoint x="392" y="120" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

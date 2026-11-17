@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_S2" targetNamespace="http://arca.ai/procesos/bpmn" exporter="Camunda Modeler" exporterVersion="5.51.1" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.24.0">
+  <bpmn:process id="Process_S2_DesplegarCambios" name="S2 Desplegar cambios en plataforma" isExecutable="true" camunda:historyTimeToLive="180">
+    <bpmn:documentation>Proceso de soporte reutilizable. Despliega un cambio en la plataforma (por ejemplo, una nueva versión del modelo de score), ejecuta pruebas de humo y, si no son saludables, revierte al estado anterior. Lo invocan como Call Activity los procesos que necesiten desplegar cambios (G3 hoy; otros, como G2, a futuro). Devuelve la variable despliegueSaludable.</bpmn:documentation>
+    <bpmn:startEvent id="StartEvent_S2_Cambio" name="Cambio listo para desplegar">
+      <bpmn:outgoing>Flow_S2_01</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="Task_S2_Desplegar" name="Desplegar los cambios en la plataforma" camunda:delegateExpression="${s2DesplegarCambio}">
+      <bpmn:incoming>Flow_S2_01</bpmn:incoming>
+      <bpmn:outgoing>Flow_S2_02</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_S2_PruebasHumo" name="Ejecutar pruebas de humo" camunda:delegateExpression="${s2PruebasHumo}">
+      <bpmn:incoming>Flow_S2_02</bpmn:incoming>
+      <bpmn:outgoing>Flow_S2_03</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Gateway_S2_Salud" name="¿Despliegue saludable?" default="Flow_S2_No">
+      <bpmn:incoming>Flow_S2_03</bpmn:incoming>
+      <bpmn:outgoing>Flow_S2_Si</bpmn:outgoing>
+      <bpmn:outgoing>Flow_S2_No</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:endEvent id="EndEvent_S2_Completado" name="Despliegue completado">
+      <bpmn:incoming>Flow_S2_Si</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:serviceTask id="Task_S2_Revertir" name="Revertir al estado anterior" camunda:delegateExpression="${s2RevertirDespliegue}">
+      <bpmn:incoming>Flow_S2_No</bpmn:incoming>
+      <bpmn:outgoing>Flow_S2_04</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="EndEvent_S2_Revertido" name="Despliegue revertido">
+      <bpmn:incoming>Flow_S2_04</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_S2_01" sourceRef="StartEvent_S2_Cambio" targetRef="Task_S2_Desplegar" />
+    <bpmn:sequenceFlow id="Flow_S2_02" sourceRef="Task_S2_Desplegar" targetRef="Task_S2_PruebasHumo" />
+    <bpmn:sequenceFlow id="Flow_S2_03" sourceRef="Task_S2_PruebasHumo" targetRef="Gateway_S2_Salud" />
+    <bpmn:sequenceFlow id="Flow_S2_Si" name="Sí" sourceRef="Gateway_S2_Salud" targetRef="EndEvent_S2_Completado">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${despliegueSaludable}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_S2_No" name="No" sourceRef="Gateway_S2_Salud" targetRef="Task_S2_Revertir" />
+    <bpmn:sequenceFlow id="Flow_S2_04" sourceRef="Task_S2_Revertir" targetRef="EndEvent_S2_Revertido" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_S2">
+    <bpmndi:BPMNPlane id="BPMNPlane_S2" bpmnElement="Process_S2_DesplegarCambios">
+      <bpmndi:BPMNShape id="StartEvent_S2_Cambio_di" bpmnElement="StartEvent_S2_Cambio">
+        <dc:Bounds x="182" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="150" y="223" width="100" height="42" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_S2_Desplegar_di" bpmnElement="Task_S2_Desplegar">
+        <dc:Bounds x="270" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_S2_PruebasHumo_di" bpmnElement="Task_S2_PruebasHumo">
+        <dc:Bounds x="430" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_S2_Salud_di" bpmnElement="Gateway_S2_Salud" isMarkerVisible="true">
+        <dc:Bounds x="595" y="175" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="570" y="132" width="100" height="28" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_S2_Completado_di" bpmnElement="EndEvent_S2_Completado">
+        <dc:Bounds x="730" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="698" y="223" width="100" height="42" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_S2_Revertir_di" bpmnElement="Task_S2_Revertir">
+        <dc:Bounds x="570" y="290" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_S2_Revertido_di" bpmnElement="EndEvent_S2_Revertido">
+        <dc:Bounds x="730" y="312" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="698" y="353" width="100" height="42" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_S2_01_di" bpmnElement="Flow_S2_01">
+        <di:waypoint x="218" y="200" />
+        <di:waypoint x="270" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_S2_02_di" bpmnElement="Flow_S2_02">
+        <di:waypoint x="370" y="200" />
+        <di:waypoint x="430" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_S2_03_di" bpmnElement="Flow_S2_03">
+        <di:waypoint x="530" y="200" />
+        <di:waypoint x="595" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_S2_Si_di" bpmnElement="Flow_S2_Si">
+        <di:waypoint x="645" y="200" />
+        <di:waypoint x="730" y="200" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="680" y="182" width="20" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_S2_No_di" bpmnElement="Flow_S2_No">
+        <di:waypoint x="620" y="225" />
+        <di:waypoint x="620" y="290" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="628" y="250" width="20" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_S2_04_di" bpmnElement="Flow_S2_04">
+        <di:waypoint x="670" y="330" />
+        <di:waypoint x="730" y="330" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

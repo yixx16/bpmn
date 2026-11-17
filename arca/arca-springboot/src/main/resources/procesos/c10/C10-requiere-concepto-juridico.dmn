@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:camunda="http://camunda.org/schema/1.0/dmn" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_C10_RequiereConceptoJuridico" name="C10 Requiere concepto jurídico" namespace="http://camunda.org/schema/1.0/dmn" exporter="Claude Code" exporterVersion="1.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.24.0">
+  <decision id="C10_RequiereConceptoJuridico" name="Requiere concepto jurídico" camunda:historyTimeToLive="180">
+    <decisionTable id="DecisionTable_C10_RequiereConceptoJuridico" hitPolicy="FIRST">
+      <input id="Input_C10_RequiereConceptoJuridico_1" label="Exclusión dudosa">
+        <inputExpression id="InputExpression_C10_RequiereConceptoJuridico_1" typeRef="boolean"><text>exclusionDudosa</text></inputExpression>
+      </input>
+      <input id="Input_C10_RequiereConceptoJuridico_2" label="Monto reclamado (USD)">
+        <inputExpression id="InputExpression_C10_RequiereConceptoJuridico_2" typeRef="double"><text>montoReclamado</text></inputExpression>
+      </input>
+      <output id="Output_C10_RequiereConceptoJuridico_1" label="Requiere concepto jurídico" name="requiereConceptoJuridico" typeRef="boolean" />
+      <rule id="Rule_C10_RequiereConceptoJuridico_1">
+        <description>Si la aplicación de una exclusión es dudosa, decide el Asesor Jurídico</description>
+        <inputEntry id="InputEntry_C10_RequiereConceptoJuridico_1_1"><text>true</text></inputEntry>
+        <inputEntry id="InputEntry_C10_RequiereConceptoJuridico_1_2"><text>-</text></inputEntry>
+        <outputEntry id="OutputEntry_C10_RequiereConceptoJuridico_1_1"><text>true</text></outputEntry>
+      </rule>
+      <rule id="Rule_C10_RequiereConceptoJuridico_2">
+        <description>Reclamaciones desde 250.000 USD requieren concepto jurídico</description>
+        <inputEntry id="InputEntry_C10_RequiereConceptoJuridico_2_1"><text>-</text></inputEntry>
+        <inputEntry id="InputEntry_C10_RequiereConceptoJuridico_2_2"><text>&gt;= 250000</text></inputEntry>
+        <outputEntry id="OutputEntry_C10_RequiereConceptoJuridico_2_1"><text>true</text></outputEntry>
+      </rule>
+      <rule id="Rule_C10_RequiereConceptoJuridico_3">
+        <description>Resto de avisos: el Jefe de Siniestros decide sin concepto</description>
+        <inputEntry id="InputEntry_C10_RequiereConceptoJuridico_3_1"><text>-</text></inputEntry>
+        <inputEntry id="InputEntry_C10_RequiereConceptoJuridico_3_2"><text>-</text></inputEntry>
+        <outputEntry id="OutputEntry_C10_RequiereConceptoJuridico_3_1"><text>false</text></outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram id="DMNDiagram_C10_RequiereConceptoJuridico">
+      <dmndi:DMNShape id="DMNShape_C10_RequiereConceptoJuridico" dmnElementRef="C10_RequiereConceptoJuridico">
+        <dc:Bounds height="80" width="180" x="160" y="100" />
+      </dmndi:DMNShape>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</definitions>

@@ -2,15 +2,19 @@
 
 **Nombre del proyecto:** ARCA, seguro de mala praxis profesional por uso de IA. Modelado y automatización de tres procesos de negocio en Camunda Platform 7.24.
 
+Los procesos se pueden ejecutar de dos formas:
+- En **Camunda Run** con workers en JavaScript: las carpetas de cada proceso, descritas en las secciones siguientes.
+- Con **Camunda 7 embebido en Spring Boot**, que incluye un portal para la firma y un panel interno por rol: `arca/arca-springboot`, descrito en [su sección](#versión-spring-boot-camunda-7-embebido).
+
 ARCA es una aseguradora emergente que cubre los errores profesionales que cometen las firmas de abogados al usar inteligencia artificial. En lugar de encuestar a la firma, mide su riesgo con evidencia: escanea su huella pública, le aplica un cuestionario y calcula un score de 0 a 100 que decide si es asegurable y a qué precio.
 
 ## Integrantes del grupo y proceso a cargo
 
-| Estudiante (nombre completo) | Código | Proceso que asumió | Nombre de la carpeta en el repositorio |
-|---|---|---|---|
-| Diego Alejandro Machado Tovar | 160005017 | C10 Registrar el aviso de siniestro | `arca/C10-registrar-el-aviso-de-siniestro` |
-| Jesus Gregorio Delgado | 160005010 | C3 Suscribir la solicitud | `arca/C3-suscribir-la-solicitud` |
-| Johan Sebastian Forero Agudelo | 160005011 | G3 Publicar una versión del modelo de score | `arca/G3-publicar-una-version-del-modelo-de-score` |
+| Estudiante (nombre completo) | Código | Proceso que asumió | Nombre de la carpeta en el repositorio | Implementación en Spring Boot |
+|---|---|---|---|---|
+| Diego Alejandro Machado Tovar | 160005017 | C10 Registrar el aviso de siniestro | `arca/C10-registrar-el-aviso-de-siniestro` | `arca/arca-springboot`, paquete `com.arca.c10` |
+| Jesus Gregorio Delgado | 160005010 | C3 Suscribir la solicitud | `arca/C3-suscribir-la-solicitud` | `arca/arca-springboot`, paquete `com.arca.c3` |
+| Johan Sebastian Forero Agudelo | 160005011 | G3 Publicar una versión del modelo de score | `arca/G3-publicar-una-version-del-modelo-de-score` | `arca/arca-springboot`, paquete `com.arca.g3` |
 
 ## Qué desplegar en el motor y cómo iniciar cada proceso
 
@@ -97,6 +101,10 @@ Proceso core de la cadena *Aviso-a-Pago*. Recibe la reclamación contra una firm
 - **Cierre:** si hay cobertura, se abre el expediente; si no, se registra el aviso sin cobertura. En ambos casos la comunicación a la firma se hace con una **Call Activity** que invoca el proceso reutilizable `C10.1 Comunicar a la firma`.
 - **Automatización:** 7 External Tasks atendidas por el worker en JavaScript `worker/index.js`.
 - **Pruebas:** `pruebas.txt` trae los comandos para iniciar cada escenario desde PowerShell o cmd.
+- **Spring Boot:** en `arca-springboot`, paquete `com.arca.c10`:
+  - `C10Delegates` reemplaza al worker con 7 JavaDelegates.
+  - `C10Controller` recibe el aviso que la firma envía desde el portal (mensaje `AvisoReclamacion`).
+  - El Jefe de Siniestros y el Asesor Jurídico completan sus tareas en el panel interno.
 
 ### Jesus Gregorio Delgado · C3 Suscribir la solicitud
 
@@ -113,6 +121,10 @@ Proceso core del grupo de Adquisición. Decide si ARCA asume el riesgo de una fi
 - **Cierre:** si se acepta, se calcula la cotización con prima y límite; si se rechaza, se genera un plan de mejora con nueva evaluación a los 90 días. La decisión se registra en el expediente y se notifica al canal con una segunda **Call Activity**, que invoca `C3.1 Notificar la decisión al canal`.
 - **Automatización:** 10 External Tasks, de C3 y de sus dos procesos invocados, atendidas por el worker en JavaScript `worker/index.js`.
 - **Presentación:** `guia-presentacion.md` explica la demo paso a paso y `comandos.txt` reúne los comandos.
+- **Spring Boot:** en `arca-springboot`, paquete `com.arca.c3`:
+  - `C3Delegates` reemplaza al worker con 10 JavaDelegates, de C3, C1 y C3.1.
+  - `C3Controller` permite a la firma, desde el portal, iniciar la evaluación (`CuestionarioIniciado`) y responder el cuestionario de 8 preguntas (`RespuestasCuestionarioRecibidas`).
+  - El Suscriptor, el Actuario y el Director de Suscripción deciden en el panel interno.
 
 ### Johan Sebastian Forero Agudelo · G3 Publicar una versión del modelo de score
 
@@ -128,6 +140,30 @@ Proceso de gestión. Mantiene el modelo de score alineado con la siniestralidad 
 - **Cierre:** con el despliegue saludable se registra la vigencia y la trazabilidad, y el evento final de mensaje `VersionModeloPublicada` avisa a los procesos que usan el modelo.
 - **Automatización:** las External Tasks de G3 y S2 las atiende el worker en JavaScript `worker/worker.js`, que también simula la respuesta del carrier.
 - **Documentación propia:** `README.md` de la carpeta explica el despliegue y los escenarios, y `pruebas-curl.txt` las pruebas con curl.
+- **Spring Boot:** en `arca-springboot`, paquete `com.arca.g3`:
+  - `G3Delegates` reemplaza al worker con 7 JavaDelegates, de G3 y S2.
+  - `G3Controller` permite al Actuario Jefe iniciar una nueva versión desde el panel (`NecesidadNuevaVersion`).
+  - El rol Carrier aprueba o rechaza la versión (`RespuestaCarrier`), en lugar de la respuesta simulada del worker.
+
+## Versión Spring Boot (Camunda 7 embebido)
+
+`arca/arca-springboot` ejecuta los tres procesos en un motor Camunda 7.24.0 embebido en Spring Boot 3.5.5, con Java 21 y una base Postgres propia levantada con Docker. Despliega los procesos al arrancar y sirve dos vistas hechas con React 18 y CSS propio, sin paso de compilación:
+- **Portal de la firma:** reportar un siniestro (C10), solicitar la evaluación y responder el cuestionario (C3), y ver el historial con el estado de cada solicitud.
+- **Panel interno:** la bandeja de tareas por rol, que dibuja los mismos formularios `.form`; el inicio de G3; y la respuesta del carrier.
+
+Cockpit queda para el monitoreo. Cada integrante es responsable de su paquete: Diego Alejandro Machado Tovar de `com.arca.c10`, Jesus Gregorio Delgado de `com.arca.c3` y Johan Sebastian Forero Agudelo de `com.arca.g3`. Las carpetas de cada proceso y sus workers JavaScript no cambian.
+
+Desde `arca/arca-springboot`, con JDK 21 y Docker, después de copiar `.env.example` como `.env` y cambiar sus contraseñas:
+
+```bash
+docker compose up -d
+```
+
+```bash
+./mvnw spring-boot:run
+```
+
+Luego entrar a http://localhost:8090/. El [README del módulo](arca/arca-springboot/README.md) explica las vistas, los usuarios por rol, cómo recorrer cada proceso de punta a punta y las pruebas automáticas.
 
 ## Estructura del repositorio
 
@@ -137,6 +173,7 @@ bpmn/
 │   ├── C10-registrar-el-aviso-de-siniestro/      Diego Alejandro Machado Tovar
 │   ├── C3-suscribir-la-solicitud/                Jesus Gregorio Delgado
 │   ├── G3-publicar-una-version-del-modelo-de-score/   Johan Sebastian Forero Agudelo
+│   ├── arca-springboot/  los tres procesos con Camunda 7 embebido en Spring Boot, portal y panel (paquetes c10, c3 y g3)
 │   ├── pruebas/        demo.mjs (comandos para la demo) y probar-procesos.mjs (prueba de punta a punta)
 │   └── docs/           arquitectura, imágenes de los diagramas y guía de demo
 └── practicas/          prácticas anteriores del curso (L06a, L08, Spring Boot)

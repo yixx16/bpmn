@@ -1,0 +1,37 @@
+# Las credenciales salen de variables de entorno. Si existe un archivo .env en la carpeta
+# desde donde se arranca la aplicación, también se lee (el mismo que usa docker compose).
+spring:
+  config:
+    import: optional:file:.env[.properties]
+  datasource:
+    url: jdbc:postgresql://${ARCA_DB_HOST:localhost}:${ARCA_DB_PORT:5433}/${ARCA_DB_NAME:arca_camunda}
+    username: ${ARCA_DB_USER:arca}
+    password: ${ARCA_DB_PASSWORD}
+
+server:
+  port: ${ARCA_PORT:8090}
+
+camunda:
+  bpm:
+    database:
+      type: postgres
+      schema-update: true
+    admin-user:
+      id: ${CAMUNDA_ADMIN_USER:admin}
+      password: ${CAMUNDA_ADMIN_PASSWORD}
+      first-name: Administrador
+    filter:
+      create: Todas las tareas
+    history-level: full
+    # La raíz "/" muestra el inicio de ARCA, no la bienvenida de Camunda
+    webapp:
+      index-redirect-enabled: false
+    # Los grupos candidatos de los BPMN llevan guion (jefes-siniestros) y los usuarios de demo, punto
+    generic-properties:
+      properties:
+        group-resource-whitelist-pattern: "[a-zA-Z0-9-]+|camunda-admin"
+        user-resource-whitelist-pattern: "[a-zA-Z0-9.-]+"
+
+arca:
+  # Contraseña común de los usuarios de demo de cada rol (ver README)
+  demo-password: ${ARCA_DEMO_PASSWORD}

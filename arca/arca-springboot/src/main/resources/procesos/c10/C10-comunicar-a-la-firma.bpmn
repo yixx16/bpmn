@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_Process_C10_ComunicarFirma" targetNamespace="http://arca.ai/procesos/bpmn" exporter="Claude Code" exporterVersion="1.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.24.0">
+  <bpmn:process id="Process_C10_ComunicarFirma" name="C10.1 Comunicar a la firma" isExecutable="true" camunda:historyTimeToLive="180">
+    <bpmn:documentation>Proceso invocado por las Call Activity de C10. Recibe tipoComunicacion (PREVERIFICACION o SIN_COBERTURA) y las variables del aviso.</bpmn:documentation>
+    <bpmn:startEvent id="StartEvent_C10_ComunicarFirma" name="Comunicación solicitada">
+      <bpmn:outgoing>Flow_C10_ComunicarFirma_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="Task_C10_ComunicarFirma" name="Redactar y enviar la comunicación a la firma" camunda:delegateExpression="${c10EnviarComunicacion}">
+      <bpmn:incoming>Flow_C10_ComunicarFirma_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_C10_ComunicarFirma_2</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="EndEvent_C10_ComunicarFirma" name="Comunicación enviada">
+      <bpmn:incoming>Flow_C10_ComunicarFirma_2</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_C10_ComunicarFirma_1" sourceRef="StartEvent_C10_ComunicarFirma" targetRef="Task_C10_ComunicarFirma" />
+    <bpmn:sequenceFlow id="Flow_C10_ComunicarFirma_2" sourceRef="Task_C10_ComunicarFirma" targetRef="EndEvent_C10_ComunicarFirma" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_Process_C10_ComunicarFirma">
+    <bpmndi:BPMNPlane id="BPMNPlane_Process_C10_ComunicarFirma" bpmnElement="Process_C10_ComunicarFirma">
+      <bpmndi:BPMNShape id="StartEvent_C10_ComunicarFirma_di" bpmnElement="StartEvent_C10_ComunicarFirma">
+        <dc:Bounds x="152" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="125" y="145" width="90" height="27" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_C10_ComunicarFirma_di" bpmnElement="Task_C10_ComunicarFirma">
+        <dc:Bounds x="240" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_C10_ComunicarFirma_di" bpmnElement="EndEvent_C10_ComunicarFirma">
+        <dc:Bounds x="392" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="365" y="145" width="90" height="27" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_C10_ComunicarFirma_1_di" bpmnElement="Flow_C10_ComunicarFirma_1">
+        <di:waypoint x="188" y="120" />
+        <di:waypoint x="240" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C10_ComunicarFirma_2_di" bpmnElement="Flow_C10_ComunicarFirma_2">
+        <di:waypoint x="340" y="120" />
+        <di:waypoint x="392" y="120" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

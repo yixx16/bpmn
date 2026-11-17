@@ -1,0 +1,21 @@
+# Base de datos Postgres dedicada al motor Camunda embebido en arca-springboot.
+# Lee las credenciales de .env (copia .env.example como .env y cambia las contraseñas).
+services:
+  postgres:
+    image: postgres:16
+    container_name: arca-camunda-db
+    environment:
+      POSTGRES_DB: ${ARCA_DB_NAME:-arca_camunda}
+      POSTGRES_USER: ${ARCA_DB_USER:-arca}
+      POSTGRES_PASSWORD: ${ARCA_DB_PASSWORD:?Define ARCA_DB_PASSWORD en .env}
+    ports:
+      - "${ARCA_DB_PORT:-5433}:5432"
+    volumes:
+      - arca-camunda-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      retries: 10
+
+volumes:
+  arca-camunda-data:

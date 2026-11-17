@@ -1,0 +1,57 @@
+{
+  "components": [
+    {
+      "label": "Versión bajo revisión",
+      "type": "textfield",
+      "id": "Field_c1",
+      "layout": {
+        "row": "Row_c1",
+        "columns": null
+      },
+      "key": "versionCandidata",
+      "readonly": true
+    },
+    {
+      "label": "Decisión del comité",
+      "type": "select",
+      "id": "Field_c2",
+      "layout": {
+        "row": "Row_c2",
+        "columns": null
+      },
+      "key": "decisionComite",
+      "validate": {
+        "required": true
+      },
+      "values": [
+        {
+          "label": "Aprobada",
+          "value": "APROBADA"
+        },
+        {
+          "label": "Requiere ajustes",
+          "value": "AJUSTES"
+        },
+        {
+          "label": "Rechazada",
+          "value": "RECHAZADA"
+        }
+      ]
+    },
+    {
+      "label": "Comentarios del comité",
+      "type": "textarea",
+      "id": "Field_c3",
+      "layout": {
+        "row": "Row_c3",
+        "columns": null
+      },
+      "key": "comentariosComite"
+    }
+  ],
+  "type": "default",
+  "id": "g3-decision-comite",
+  "executionPlatform": "Camunda Platform",
+  "executionPlatformVersion": "7.24.0",
+  "schemaVersion": 16
+}
